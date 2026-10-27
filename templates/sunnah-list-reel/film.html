@@ -1,0 +1,417 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'Grotesk';src:url(fonts/SpaceGrotesk-500-normal-latin.woff2) format('woff2');font-weight:500}
+@font-face{font-family:'Grotesk';src:url(fonts/SpaceGrotesk-700-normal-latin.woff2) format('woff2');font-weight:700}
+@font-face{font-family:'Serif';src:url(fonts/InstrumentSerif-400-italic-latin.woff2) format('woff2');font-style:italic}
+@font-face{font-family:'Mono';src:url(fonts/JetBrainsMono-600-normal-latin.woff2) format('woff2');font-weight:600}
+@font-face{font-family:'Amiri';src:url(fonts/Amiri-400-normal-arabic.woff2) format('woff2');font-weight:400}
+@font-face{font-family:'Amiri';src:url(fonts/Amiri-700-normal-arabic.woff2) format('woff2');font-weight:700}
+html,body{margin:0;background:#000}
+canvas{display:block;height:100vh;width:auto;margin:auto}
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script>
+const W = 1080, H = 1920, DURATION = 61;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const C = {
+  bg1: '#0F1C30', bg2: '#09121F', panel: '#1A2A44', panel2: '#243A5E', line: '#2C4166',
+  amber: '#F5B95F', amberD: '#C98A33', cream: '#F4EAD8', muted: '#8A9BB8', navy: '#0B1526',
+  water: '#7CC4F0', moon: '#FBE7B5', glow: '#FFD88A',
+};
+const PEOPLE = ['#8EC5E8', '#F2A7B5', '#A8D5A2', '#F4D58D', '#C3B1E1'];
+
+// ---------- utils ----------
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const eo = k => 1 - Math.pow(1 - k, 3);
+const eio = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const back = k => { const c1 = 1.7, c3 = c1 + 1; return k <= 0 ? 0 : 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+const pop = (t, a, d = .35) => back(seg(t, a, a + d));
+const hex = (c, a) => { const n = parseInt(c.slice(1), 16); return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`; };
+const mix = (c1, c2, k) => { const p = c => [0, 2, 4].map(i => parseInt(c.slice(1 + i, 3 + i), 16)); const a = p(c1), b = p(c2); return '#' + a.map((v, i) => Math.round(lerp(v, b[i], k)).toString(16).padStart(2, '0')).join(''); };
+
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function txt(s, x, y, o = {}) {
+  const { size = 60, font = 'Grotesk', weight = 700, italic = false, color = C.cream, align = 'center', alpha = 1, scale = 1, dir = 'ltr', spacing = 0, glow = 0 } = o;
+  if (alpha <= .003) return;
+  ctx.save(); ctx.globalAlpha *= clamp(alpha);
+  ctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${font}`; ctx.direction = dir; ctx.letterSpacing = spacing + 'px';
+  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.translate(x, y); if (scale !== 1) ctx.scale(scale, scale);
+  if (glow) { ctx.shadowColor = o.glowColor || C.glow; ctx.shadowBlur = glow; }
+  ctx.fillStyle = color; ctx.fillText(s, 0, 0); ctx.restore();
+}
+const fontOf = tk => tk.it ? `italic 400 74px Serif` : `700 62px Grotesk`;
+function measure(s, f) { ctx.font = f; ctx.letterSpacing = '0px'; return ctx.measureText(s).width; }
+
+// Title: tokens {w, hl (amber box), it (italic serif)}; words pop in one by one.
+function title(tokens, y, t, t0, alpha = 1, maxW = 900) {
+  const sp = 16, lines = [[]]; let lw = 0;
+  tokens.forEach((tk, i) => { const w = measure(tk.w, fontOf(tk)) + (tk.hl ? 24 : 0); if (lw + w > maxW && lines.at(-1).length) { lines.push([]); lw = 0; } lines.at(-1).push({ ...tk, i, width: w }); lw += w + sp; });
+  const lh = 86;
+  lines.forEach((ln, li) => {
+    const tw = ln.reduce((a, k) => a + k.width, 0) + sp * (ln.length - 1);
+    let x = W / 2 - tw / 2; const yy = y + (li - (lines.length - 1) / 2) * lh;
+    ln.forEach(tk => {
+      const ta = t0 + .15 + tk.i * .12, k = pop(t, ta, .32);
+      if (k > 0) {
+        ctx.save(); ctx.globalAlpha = alpha * clamp(k * 1.4);
+        ctx.translate(x + tk.width / 2, yy + (1 - clamp(k)) * 18); ctx.scale(lerp(.7, 1, k), lerp(.7, 1, k));
+        if (tk.hl) {
+          const bk = eo(seg(t, ta + .1, ta + .4));
+          ctx.fillStyle = C.amber; rr(-tk.width / 2, -40, tk.width * bk, 80, 14); ctx.fill();
+        }
+        ctx.font = fontOf(tk); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = tk.hl ? C.navy : tk.it ? C.amber : C.cream; ctx.fillText(tk.w, 0, tk.it ? 4 : 2);
+        ctx.restore();
+      }
+      x += tk.width + sp;
+    });
+  });
+  return lines.length;
+}
+const T = s => s.split(' ').map(w => w.startsWith('*') ? { w: w.slice(1).replace(/_/g, ' '), hl: 1 } : w.startsWith('~') ? { w: w.slice(1).replace(/_/g, ' '), it: 1 } : { w });
+
+function tag(s, t, a, alpha = 1) {
+  const k = pop(t, a, .4); if (k <= 0) return;
+  const f = '600 26px Mono'; ctx.font = f; ctx.letterSpacing = '3px'; const w = ctx.measureText(s).width + 60;
+  ctx.save(); ctx.globalAlpha = alpha * clamp(k); ctx.translate(W / 2, 1300); ctx.scale(lerp(.8, 1, k), lerp(.8, 1, k));
+  ctx.fillStyle = hex(C.panel2, .9); rr(-w / 2, -28, w, 56, 28); ctx.fill();
+  ctx.strokeStyle = hex(C.amber, .35); ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
+  txt(s, W / 2, 1301, { font: 'Mono', weight: 600, size: 26, color: C.amber, alpha: alpha * clamp(k), spacing: 3, scale: lerp(.8, 1, k) });
+}
+function sub(s, y, t, a, alpha = 1, o = {}) {
+  const k = eo(seg(t, a, a + .5));
+  txt(s, W / 2, y + (1 - k) * 14, { font: 'Serif', weight: 400, italic: true, size: o.size || 52, color: o.color || C.muted, alpha: alpha * k });
+}
+
+// ---------- characters ----------
+// a faceless pastel figure: round head + capsule body (+ optional little hands)
+function person(x, y, col, o = {}) {
+  const s = o.scale || 1, pose = o.pose || 'stand';
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.globalAlpha *= o.alpha ?? 1;
+  if (pose === 'lie') {
+    ctx.fillStyle = col; rr(-70, -22, 140, 44, 22); ctx.fill();
+    ctx.beginPath(); ctx.arc(-96, -6, 24, 0, 6.28); ctx.fill();
+  } else {
+    const h = pose === 'sit' ? 64 : 92, bob = o.bob || 0;
+    ctx.fillStyle = col; rr(-24, -h + bob, 48, h - bob, 24); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -h - 30 + bob, 25, 0, 6.28); ctx.fill();
+  }
+  ctx.restore();
+}
+function hand(x, y, col, r = 11) { ctx.fillStyle = mix(col, '#ffffff', .25); ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.fill(); }
+function bed(x, y, w = 420, o = {}) {
+  ctx.save();
+  ctx.fillStyle = '#3A2F4F'; rr(x - w / 2 - 14, y - 120, 28, 150, 10); ctx.fill();   // headboard
+  ctx.fillStyle = '#2E4570'; rr(x - w / 2, y - 40, w, 52, 14); ctx.fill();            // frame
+  ctx.fillStyle = '#E8E1F0'; rr(x - w / 2 + 6, y - 62, w - 12, 30, 12); ctx.fill();    // mattress
+  ctx.fillStyle = '#FFFFFF'; rr(x - w / 2 + 20, y - 92, 92, 38, 16); ctx.fill();       // pillow
+  if (o.blanket) { ctx.fillStyle = o.blanket; rr(x - w / 2 + 120, y - 82, w - 140, 48, 18); ctx.fill(); }
+  ctx.fillStyle = '#22355A'; ctx.fillRect(x - w / 2 + 10, y + 12, 16, 30); ctx.fillRect(x + w / 2 - 26, y + 12, 16, 30);
+  ctx.restore();
+}
+function zz(x, y, t, a) {
+  for (let i = 0; i < 3; i++) {
+    const k = ((t * .55 + i / 3) % 1);
+    txt('z', x + k * 50 + i * 6, y - k * 120, { size: 30 + i * 10, color: C.cream, alpha: a * Math.sin(k * Math.PI) });
+  }
+}
+function moon(x, y, r, a = 1) {
+  ctx.save(); ctx.globalAlpha *= a;
+  const g = ctx.createRadialGradient(x, y, r * .5, x, y, r * 3); g.addColorStop(0, hex(C.moon, .25)); g.addColorStop(1, hex(C.moon, 0));
+  ctx.fillStyle = g; ctx.fillRect(x - r * 3, y - r * 3, r * 6, r * 6);
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.save(); ctx.clip();
+  ctx.fillStyle = C.moon; ctx.fill(); ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(x + r * .45, y - r * .3, r * .9, 0, 6.28); ctx.fill(); ctx.restore();
+  ctx.restore();
+}
+function sparkle(x, y, r, a) {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = C.glow; ctx.translate(x, y);
+  ctx.beginPath(); for (let i = 0; i < 8; i++) { const an = i * Math.PI / 4, rad = i % 2 ? r * .3 : r; ctx.lineTo(Math.cos(an) * rad, Math.sin(an) * rad); } ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function check(x, y, r, k) {
+  if (k <= 0) return;
+  ctx.save(); ctx.translate(x, y); ctx.scale(k, k); ctx.fillStyle = '#7FD39B'; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.28); ctx.fill();
+  ctx.strokeStyle = C.navy; ctx.lineWidth = r * .28; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(-r * .45, 0); ctx.lineTo(-r * .1, r * .35); ctx.lineTo(r * .5, -r * .35); ctx.stroke(); ctx.restore();
+}
+function chip(s, x, y, k, o = {}) {
+  if (k <= 0) return;
+  const f = o.font || '700 40px Grotesk'; const w = measure(s, f) + 56, h = o.h || 76;
+  ctx.save(); ctx.globalAlpha *= clamp(k); ctx.translate(x, y); ctx.scale(lerp(.6, 1, k), lerp(.6, 1, k));
+  ctx.fillStyle = o.bg || C.panel2; rr(-w / 2, -h / 2, w, h, 18); ctx.fill();
+  if (o.stroke) { ctx.strokeStyle = o.stroke; ctx.lineWidth = 3; ctx.stroke(); }
+  ctx.font = f; ctx.fillStyle = o.color || C.cream; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, 0, 3);
+  ctx.restore();
+}
+function ground(y = 1150, a = 1) { ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = hex(C.line, .9); rr(110, y, W - 220, 6, 3); ctx.fill(); ctx.restore(); }
+
+// ---------- scenes ----------
+// each: [t0, t1, bg tint, draw(t, lt, a), cues [[lt, kind]]]
+const S = [];
+const scene = (t0, t1, tint, draw, cues = []) => S.push({ t0, t1, tint, draw, cues });
+
+// 0 — HOOK
+scene(0, 3.5, '#0F1C30', (t, lt, a) => {
+  moon(830, 560, 58, a * pop(t, 0.05));
+  txt('Before you sleep tonight…', W / 2, 380, { size: 46, weight: 500, color: C.muted, alpha: a * eo(seg(t, .05, .4)) });
+  const k7 = pop(t, .45, .4);
+  txt('7', W / 2, 640, { size: 300, weight: 700, color: C.amber, alpha: a * clamp(k7 * 1.5), scale: lerp(.5, 1, k7), glow: 30 });
+  txt('sunnahs', W / 2, 840, { size: 92, weight: 700, color: C.cream, alpha: a * eo(seg(t, .75, 1.05)) });
+  txt('before you sleep', W / 2, 935, { font: 'Serif', weight: 400, italic: true, size: 84, color: C.amber, alpha: a * eo(seg(t, .95, 1.25)) });
+  const kh = pop(t, 1.55, .4);
+  if (kh > 0) {
+    ctx.save(); ctx.globalAlpha = a * clamp(kh); ctx.translate(W / 2, 1090); ctx.scale(lerp(.7, 1, kh), lerp(.7, 1, kh));
+    ctx.fillStyle = C.amber; rr(-400, -62, 800, 124, 22); ctx.fill(); ctx.restore();
+    txt('#4 puts a guard over you', W / 2, 1066, { size: 42, color: C.navy, alpha: a * clamp(kh), scale: lerp(.7, 1, kh) });
+    txt('until morning', W / 2, 1116, { size: 42, color: C.navy, alpha: a * clamp(kh), scale: lerp(.7, 1, kh) });
+  }
+  bed(W / 2, 1420, 440, { blanket: '#5B7BB5' }); person(W / 2 - 20, 1352, PEOPLE[0], { pose: 'lie', scale: .95 }); zz(W / 2 + 120, 1300, t, a);
+}, [[.05, 'open'], [.45, 'big'], [1.55, 'notify']]);
+
+// 1 — WUDU
+scene(3.5, 10.1, '#0E2234', (t, lt, a) => {
+  title(T('Make *wudu before bed'), 380, t, 3.5, a);
+  sub('like you would for prayer', 485, t, 4.3, a);
+  ground(1150, a);
+  // sink
+  const sx = 400;
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.fillStyle = '#2E4570'; rr(sx - 120, 940, 240, 36, 12); ctx.fill(); rr(sx - 30, 976, 60, 174, 8); ctx.fill();
+  ctx.fillStyle = '#9FB4D6'; rr(sx - 8, 820, 16, 80, 6); ctx.fill(); rr(sx - 8, 820, 70, 16, 6); ctx.fill(); // tap
+  ctx.restore();
+  const flow = seg(lt, .9, 1.1) * (1 - seg(lt, 3.6, 3.8));
+  if (flow > 0) for (let i = 0; i < 9; i++) {
+    const k = (lt * 2.2 + i / 9) % 1;
+    ctx.fillStyle = hex(C.water, a * flow * (1 - k * .4)); ctx.beginPath(); ctx.ellipse(sx + 50, 840 + k * 100, 7, 11, 0, 0, 6.28); ctx.fill();
+  }
+  const px = lerp(760, 560, eio(seg(lt, .2, .9))), bob = Math.sin(lt * 14) * 3 * (1 - seg(lt, .8, .9));
+  person(px, 1150, PEOPLE[0], { bob, alpha: a });
+  // hands under the water, rubbing
+  if (lt > .9) { const r = Math.sin(lt * 18) * 8; hand(px - 70 + r, 930, PEOPLE[0]); hand(px - 50 - r, 940, PEOPLE[0]); }
+  // clean sparkle
+  const sk = seg(lt, 3.9, 4.6);
+  for (let i = 0; i < 6; i++) sparkle(px + Math.cos(i) * 80, 1000 - i * 30 + Math.sin(i * 3) * 30, 14 * pop(lt, 3.9 + i * .06), a * (1 - seg(lt, 5.6, 6.2)));
+  check(px + 60, 880, 30, pop(lt, 4.2) * a);
+  tag('SAHIH AL-BUKHARI 247', t, 4.6, a);
+}, [[0, 'swipe'], [.9, 'drop'], [1.6, 'drop'], [2.4, 'drop'], [3.9, 'sparkle'], [4.2, 'success']]);
+
+// 2 — DUST OFF THE BED
+scene(10.1, 16.6, '#121E36', (t, lt, a) => {
+  title(T('*Dust_off your bed'), 380, t, 10.1, a);
+  sub("you don't know what came onto it", 485, t, 10.9, a);
+  bed(560, 1110, 460);
+  const px = 300; person(px, 1150, PEOPLE[1], { alpha: a });
+  // waist-sheet swinging over the bed (3 shakes)
+  const shake = lt > 1 && lt < 4.4 ? Math.sin((lt - 1) * Math.PI * 2 / 1.1) : 0;
+  ctx.save(); ctx.globalAlpha = a; ctx.translate(px + 30, 1000); ctx.rotate(-.9 + shake * .55);
+  ctx.fillStyle = '#F4EAD8'; ctx.beginPath(); ctx.moveTo(0, -26);
+  for (let x = 0; x <= 230; x += 10) ctx.lineTo(x, -26 + Math.sin(x * .05 + lt * 9) * 6 * (x / 230));
+  for (let x = 230; x >= 0; x -= 10) ctx.lineTo(x, 26 + Math.sin(x * .05 + lt * 9) * 6 * (x / 230));
+  ctx.closePath(); ctx.fill(); ctx.strokeStyle = 'rgba(150,160,190,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(220, Math.sin(11.5 + lt * 9) * 6); ctx.stroke(); ctx.restore();
+  hand(px + 34, 1000, PEOPLE[1]);
+  // dust puffs on each shake
+  for (let s = 0; s < 3; s++) {
+    const t0 = 1.3 + s * 1.1;
+    for (let i = 0; i < 7; i++) {
+      const k = seg(lt, t0, t0 + .9), r = mulberry(s * 10 + i)();
+      if (k <= 0 || k >= 1) continue;
+      ctx.fillStyle = hex('#C9D3E6', a * (1 - k) * .8); ctx.beginPath();
+      ctx.arc(480 + r * 260 + k * 60 * (r - .5) * 4, 1040 - k * 120 * (.5 + r), 8 + k * 14, 0, 6.28); ctx.fill();
+    }
+  }
+  check(760, 900, 30, pop(lt, 4.7) * a);
+  tag('SAHIH AL-BUKHARI 6320', t, 11.2, a);
+}, [[0, 'swipe'], [1.3, 'whoosh'], [2.4, 'whoosh'], [3.5, 'whoosh'], [4.7, 'success']]);
+
+// 3 — THE THREE QULS
+scene(16.6, 23.8, '#14203A', (t, lt, a) => {
+  title(T('Recite the *3_Quls'), 360, t, 16.6, a);
+  sub('blow into your hands, wipe your body — 3 times', 460, t, 17.3, a, { size: 46 });
+  ['al-Ikhlāṣ', 'al-Falaq', 'an-Nās'].forEach((s, i) => chip(s, 250 + i * 290, 620, pop(lt, .9 + i * .3) * a, { font: '700 38px Grotesk' }));
+  bed(W / 2, 1150, 520);
+  const px = W / 2;
+  person(px, 1090, PEOPLE[2], { pose: 'sit', alpha: a });
+  // cupped hands: blow (puffs), then wipe from head down the body
+  const cyc = (lt - 2.2) % 1.5, rep = Math.floor((lt - 2.2) / 1.5);
+  let hy = 960;
+  if (lt > 2.2 && rep < 3) {
+    if (cyc < .6) { hy = 960; for (let i = 0; i < 3; i++) { const k = (cyc / .6 + i / 3) % 1; ctx.fillStyle = hex('#FFFFFF', a * .5 * (1 - k)); ctx.beginPath(); ctx.arc(px + 4, 940 - k * 50, 6 + k * 8, 0, 6.28); ctx.fill(); } }
+    else { hy = lerp(910, 1070, eio((cyc - .6) / .9)); sparkle(px + 40, hy, 12, a); }
+  }
+  hand(px - 14, hy, PEOPLE[2], 13); hand(px + 14, hy, PEOPLE[2], 13);
+  const n = clamp(rep + (lt > 2.2 && cyc > 1.4 ? 1 : 0), 0, 3);
+  chip(`× ${Math.max(1, Math.min(3, lt > 2.2 ? rep + 1 : 1))}`, 860, 840, pop(lt, 2.2) * a, { bg: C.amber, color: C.navy, font: '700 44px Grotesk' });
+  check(860, 760, 28, pop(lt, 6.8) * a * (n >= 3 ? 1 : 0));
+  tag('SAHIH AL-BUKHARI 5017', t, 17.8, a);
+}, [[0, 'swipe'], [.9, 'pop'], [1.2, 'pop'], [1.5, 'pop'], [2.2, 'tick'], [3.7, 'tick'], [5.2, 'tick'], [6.8, 'success']]);
+
+// 4 — AYAT AL-KURSI
+scene(23.8, 31.2, '#0B1630', (t, lt, a) => {
+  title(T('Recite *Ayat_al-Kursi'), 360, t, 23.8, a);
+  sub('a guard from Allah stays with you', 460, t, 24.5, a, { size: 50, color: C.cream });
+  sub('until morning', 520, t, 24.7, a, { size: 50, color: C.cream });
+  // moon -> sun progress
+  const bx = 220, bw = 640, by = 700, p = eio(seg(lt, 2.6, 6.2));
+  ctx.save(); ctx.globalAlpha = a * eo(seg(lt, 1.8, 2.3));
+  ctx.fillStyle = C.panel; rr(bx, by - 14, bw, 28, 14); ctx.fill();
+  const g = ctx.createLinearGradient(bx, 0, bx + bw, 0); g.addColorStop(0, '#6E7FD6'); g.addColorStop(1, C.amber);
+  ctx.fillStyle = g; rr(bx, by - 14, Math.max(28, bw * p), 28, 14); ctx.fill(); ctx.restore();
+  moon(bx - 50, by, 26, a * eo(seg(lt, 1.8, 2.3)));
+  ctx.save(); ctx.globalAlpha = a * eo(seg(lt, 1.8, 2.3)); ctx.fillStyle = mix('#7A6A50', C.amber, p); ctx.beginPath(); ctx.arc(bx + bw + 52, by, 24, 0, 6.28); ctx.fill(); ctx.restore();
+  // guard dome over the sleeper
+  bed(W / 2, 1150, 480, { blanket: '#5B7BB5' });
+  person(W / 2 - 30, 1082, PEOPLE[3], { pose: 'lie', alpha: a });
+  zz(W / 2 + 140, 1020, t, a * .8);
+  const d = eo(seg(lt, 1.0, 2.0));
+  if (d > 0) {
+    ctx.save(); ctx.globalAlpha = a * d;
+    const pulse = .5 + .5 * Math.sin(lt * 3);
+    ctx.shadowColor = C.glow; ctx.shadowBlur = 30 + 20 * pulse; ctx.strokeStyle = hex(C.glow, .85); ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.ellipse(W / 2, 1160, 330, 300 * d, 0, Math.PI, 2 * Math.PI); ctx.stroke();
+    ctx.shadowBlur = 0; ctx.fillStyle = hex(C.glow, .06 + .04 * pulse); ctx.fill(); ctx.restore();
+  }
+  tag('SAHIH AL-BUKHARI 2311', t, 25.0, a);
+}, [[0, 'swipe'], [1.0, 'lock'], [2.6, 'progress'], [6.2, 'complete']]);
+
+// 5 — LAST TWO VERSES OF AL-BAQARAH
+scene(31.2, 37.6, '#101C34', (t, lt, a) => {
+  title(T('The last *2_verses of ~al-Baqarah'), 380, t, 31.2, a);
+  sub('recited at night, they will suffice you', 500, t, 32.1, a, { size: 48 });
+  // open book
+  const o = eo(seg(lt, .8, 1.4)), bx = W / 2, by = 960;
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.fillStyle = '#2E4570'; rr(bx - 250, by - 10, 500, 30, 10); ctx.fill();
+  ctx.fillStyle = '#F4EAD8';
+  ctx.save(); ctx.translate(bx, by); ctx.scale(1, 1); rr(-230 * o, -170, 230 * o, 170, 10); ctx.fill(); rr(0, -170, 230 * o, 170, 10); ctx.fill(); ctx.restore();
+  ctx.strokeStyle = hex('#9FB4D6', .7); ctx.lineWidth = 4;
+  for (let i = 0; i < 5; i++) { const k = eo(seg(lt, 1.3 + i * .08, 1.6 + i * .08)); ctx.beginPath(); ctx.moveTo(bx - 200, by - 140 + i * 26); ctx.lineTo(bx - 200 + 160 * k, by - 140 + i * 26); ctx.moveTo(bx + 40, by - 140 + i * 26); ctx.lineTo(bx + 40 + 160 * k, by - 140 + i * 26); ctx.stroke(); }
+  ctx.restore();
+  const f1 = eo(seg(lt, 1.9, 2.4)), f2 = eo(seg(lt, 2.3, 2.8));
+  chip('2:285', lerp(bx - 100, 330, f1), lerp(860, 690, f1), f1 * a, { bg: C.amber, color: C.navy });
+  chip('2:286', lerp(bx + 100, 750, f2), lerp(860, 690, f2), f2 * a, { bg: C.amber, color: C.navy });
+  person(250, 1150, PEOPLE[4], { alpha: a, bob: Math.sin(lt * 3) * 2 }); person(830, 1150, PEOPLE[0], { alpha: a, bob: Math.cos(lt * 3) * 2 });
+  ground(1150, a);
+  const ks = pop(lt, 3.6, .45);
+  txt('Sufficient.', W / 2, 1065, { font: 'Serif', weight: 400, italic: true, size: 88, color: C.amber, alpha: a * clamp(ks), scale: lerp(.7, 1, ks), glow: 20 });
+  check(W / 2 + 230, 1060, 26, pop(lt, 3.9) * a);
+  tag('SAHIH AL-BUKHARI 5009', t, 32.6, a);
+}, [[0, 'swipe'], [.8, 'open'], [1.9, 'pop'], [2.3, 'pop'], [3.6, 'big'], [3.9, 'success']]);
+
+// 6 — 33 / 33 / 34
+scene(37.6, 44.6, '#131D38', (t, lt, a) => {
+  title(T('Then say *33 · *33 · *34'), 370, t, 37.6, a);
+  sub('better for you than a servant', 470, t, 38.4, a);
+  const items = [['SubhanAllah', 'سُبْحَانَ اللَّهِ', 33], ['Alhamdulillah', 'الْحَمْدُ لِلَّهِ', 33], ['Allahu Akbar', 'اللَّهُ أَكْبَرُ', 34]];
+  items.forEach(([en, ar, n], i) => {
+    const y = 650 + i * 190, k = pop(lt, .8 + i * .15, .4), c0 = 1.4 + i * 1.5, cnt = Math.round(n * eio(seg(lt, c0, c0 + 1.3)));
+    if (k <= 0) return;
+    ctx.save(); ctx.globalAlpha = a * clamp(k); ctx.translate(W / 2, y); ctx.scale(lerp(.8, 1, k), lerp(.8, 1, k));
+    ctx.fillStyle = C.panel; rr(-420, -76, 840, 152, 26); ctx.fill();
+    if (cnt === n) { ctx.strokeStyle = hex(C.amber, .9); ctx.lineWidth = 3; ctx.stroke(); }
+    // progress ring
+    ctx.strokeStyle = C.line; ctx.lineWidth = 10; ctx.beginPath(); ctx.arc(-330, 0, 46, 0, 6.28); ctx.stroke();
+    ctx.strokeStyle = C.amber; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(-330, 0, 46, -Math.PI / 2, -Math.PI / 2 + 6.28 * cnt / n); ctx.stroke();
+    ctx.restore();
+    txt(String(cnt), W / 2 - 330, y + 2, { size: 40, color: C.cream, alpha: a * clamp(k) });
+    txt(en, W / 2 - 240, y - 22, { size: 46, align: 'left', alpha: a * clamp(k) });
+    txt(ar, W / 2 - 240, y + 34, { font: 'Amiri', weight: 400, size: 40, align: 'left', color: C.amber, alpha: a * clamp(k), dir: 'rtl' });
+    check(W / 2 + 350, y, 28, cnt === n ? pop(lt, c0 + 1.3) * a : 0);
+  });
+  tag('SAHIH AL-BUKHARI 3705', t, 38.8, a);
+}, [[0, 'swipe'], [.8, 'pop'], [.95, 'pop'], [1.1, 'pop'], [1.4, 'progress'], [2.7, 'tick'], [2.9, 'progress'], [4.2, 'tick'], [4.4, 'progress'], [5.7, 'success']]);
+
+// 7 — RIGHT SIDE + DU'A
+scene(44.6, 52.6, '#0A1328', (t, lt, a) => {
+  title(T('Sleep on your *right_side'), 360, t, 44.6, a);
+  const kd = eo(seg(lt, 1.2, 1.8));
+  ctx.save(); ctx.globalAlpha = a * kd; ctx.fillStyle = C.panel; rr(110, 500, 860, 290, 30); ctx.fill(); ctx.restore();
+  txt('and say:', W / 2, 545, { font: 'Serif', weight: 400, italic: true, size: 44, color: C.muted, alpha: a * kd });
+  txt('بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا', W / 2, 655, { font: 'Amiri', weight: 700, size: 66, color: C.amber, alpha: a * eo(seg(lt, 1.5, 2.1)), dir: 'rtl', glow: 14 });
+  txt('"In Your name, O Allah, I die and I live."', W / 2, 745, { font: 'Serif', weight: 400, italic: true, size: 40, color: C.cream, alpha: a * eo(seg(lt, 2.2, 2.8)) });
+  // lights dim, sleeper turns onto the right side with a hand under the cheek
+  const dim = eo(seg(lt, 4.2, 5.4));
+  bed(W / 2, 1150, 480, { blanket: '#5B7BB5' });
+  person(W / 2 - 30, 1082, PEOPLE[1], { pose: 'lie', alpha: a });
+  hand(W / 2 - 150, 1090, PEOPLE[1], 13);
+  zz(W / 2 + 140, 1020, t, a * dim);
+  moon(860, 900, 40, a * dim);
+  if (dim > 0) { ctx.save(); ctx.globalAlpha = a * dim * .35; ctx.fillStyle = '#02060E'; ctx.fillRect(0, 800, W, 600); ctx.restore(); }
+  tag('SAHIH AL-BUKHARI 247 · 6324', t, 45.4, a);
+}, [[0, 'swipe'], [1.5, 'notify'], [4.2, 'sleep']]);
+
+// 8 — RECAP CHECKLIST
+const RECAP = [['Wudu before bed', '247'], ['Dust off your bed', '6320'], ['The 3 Quls, 3 times', '5017'], ['Ayat al-Kursi', '2311'], ['Last 2 verses of al-Baqarah', '5009'], ['33 · 33 · 34', '3705'], ['Right side + du\'a', '247 · 6324']];
+scene(52.6, 57.8, '#0F1C30', (t, lt, a) => {
+  txt('TONIGHT', W / 2, 330, { font: 'Mono', weight: 600, size: 34, color: C.amber, spacing: 8, alpha: a * eo(seg(lt, .1, .4)) });
+  RECAP.forEach(([s, ref], i) => {
+    const y = 430 + i * 118, k = pop(lt, .3 + i * .32, .35);
+    if (k <= 0) return;
+    ctx.save(); ctx.globalAlpha = a * clamp(k); ctx.translate(lerp(60, 0, clamp(k)), 0);
+    ctx.fillStyle = C.panel; rr(110, y - 46, 860, 92, 20); ctx.fill();
+    ctx.fillStyle = C.amber; rr(132, y - 26, 52, 52, 12); ctx.fill(); ctx.restore();
+    txt(String(i + 1), 158, y + 2, { size: 32, color: C.navy, alpha: a * clamp(k) });
+    txt(s, 210, y, { size: 36, weight: 700, align: 'left', alpha: a * clamp(k) });
+    txt('B. ' + ref, 950, y, { font: 'Mono', weight: 600, size: 22, align: 'right', color: C.muted, alpha: a * clamp(k) });
+  });
+}, RECAP.map((_, i) => [.3 + i * .32, 'check']));
+
+// 9 — CTA
+scene(57.8, 61, '#0F1C30', (t, lt, a) => {
+  title(T('Which one are you *starting ~tonight?'), 520, t, 57.8, a);
+  const ks = pop(lt, 1.0, .4);
+  chip('Save this for bedtime', W / 2, 760, ks * a, { bg: C.panel2, stroke: hex(C.amber, .6), font: '700 40px Grotesk' });
+  bed(W / 2, 1150, 460, { blanket: '#5B7BB5' });
+  person(W / 2 - 30, 1082, PEOPLE[0], { pose: 'lie', alpha: a }); zz(W / 2 + 130, 1020, t, a);
+  moon(830, 930, 46, a);
+}, [[0, 'swipe'], [1.0, 'pop']]);
+
+// ---------- master ----------
+const R0 = mulberry(3); const STARS = Array.from({ length: 120 }, () => [R0() * W, R0() * H, .6 + R0() * 1.6, R0() * 6.28]);
+function background(t) {
+  // tint follows the active scene, blended at the cut
+  let tint = S[0].tint;
+  for (let i = 0; i < S.length; i++) if (t >= S[i].t0) tint = i > 0 ? mix(S[i - 1].tint, S[i].tint, eo(seg(t, S[i].t0, S[i].t0 + .5))) : S[i].tint;
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, tint); g.addColorStop(1, C.bg2);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,.025)'; ctx.lineWidth = 1;
+  for (let x = 0; x <= W; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y <= H; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  for (const [x, y, r, p] of STARS) { ctx.globalAlpha = .15 + .35 * (.5 + .5 * Math.sin(t * 1.4 + p)); ctx.fillStyle = C.moon; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.fill(); }
+  ctx.globalAlpha = 1;
+}
+function progressDots(t) {
+  const n = S.findIndex(s => t >= s.t0 && t < s.t1); if (n < 1 || n > 7) return;
+  for (let i = 0; i < 7; i++) {
+    const on = i < n, x = W / 2 + (i - 3) * 34;
+    ctx.fillStyle = on ? C.amber : hex(C.cream, .2); ctx.beginPath(); ctx.arc(x, 300, i === n - 1 ? 9 : 6, 0, 6.28); ctx.fill();
+  }
+}
+function renderAt(t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none';
+  background(t);
+  for (const s of S) {
+    if (t < s.t0 || t > s.t1 + .3) continue;
+    const out = eio(seg(t, s.t1, s.t1 + .3)), lt = t - s.t0;
+    const a = (1 - out) * eo(seg(t, s.t0, s.t0 + .25));
+    ctx.save(); ctx.translate(0, 100 - out * 80); s.draw(t, lt, a); ctx.restore();
+  }
+  progressDots(t);
+  const fade = seg(t, 60.5, 61);
+  if (fade > 0) { ctx.fillStyle = `rgba(0,0,0,${fade})`; ctx.fillRect(0, 0, W, H); }
+}
+// extra cues: a type tick when each title starts, a pop on every highlighted word (index i pops at .15 + i * .12)
+const HL = { 1: [1], 2: [0], 3: [2], 4: [1], 5: [2], 6: [2, 4, 6], 7: [3], 9: [4] };
+S.forEach((s, i) => { if (i > 0 && i !== 8) s.cues.push([.12, 'type']); (HL[i] || []).forEach(j => s.cues.push([.25 + j * .12, 'hl'])); });
+window.CUES = S.flatMap(s => s.cues.map(([lt, k]) => ({ t: +(s.t0 + lt).toFixed(3), kind: k }))).sort((x, y) => x.t - y.t);
+window.ready = (async () => {
+  await Promise.all(['500 40px Grotesk', '700 40px Grotesk', 'italic 400 40px Serif', '600 30px Mono', '400 40px Amiri', '700 40px Amiri'].map(f => document.fonts.load(f, f.includes('Amiri') ? 'بِاسْمِكَ' : 'Aa')));
+  window.renderAt = renderAt; renderAt(+new URLSearchParams(location.search).get('t') || 0);
+  if (location.search.includes('play')) { const s0 = performance.now(); const loop = () => { renderAt(((performance.now() - s0) / 1000) % DURATION); requestAnimationFrame(loop); }; loop(); }
+  return true;
+})();
+</script></body></html>
