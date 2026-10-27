@@ -1,16 +1,32 @@
 #!/bin/sh
 # Edunos Claude toolkit — installs skills, agents and media tools into ~/.claude.
-# Usage: sh install.sh            (everything)
-#        sh install.sh --light    (skills + agents only, no downloads)
+# Usage: sh install.sh                (everything)
+#        sh install.sh --light        (skills + agents + guide only, no downloads)
+#        sh install.sh --agent NAME   (enable one agent from agents-library/, e.g. game-designer)
+#        sh install.sh --all-agents   (enable all 284 agents)
 set -e
 SRC="$(cd "$(dirname "$0")" && pwd)"
 CL="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 mkdir -p "$CL/skills" "$CL/agents" "$CL/toolkit"
+if [ "$1" = "--agent" ]; then
+  f="$SRC/agents-library/${2%.md}.md"
+  [ -f "$f" ] || { echo "no agent named $2 (see $SRC/agents-library)"; exit 1; }
+  cp "$f" "$CL/agents/" && echo "agent enabled: $2"; exit 0
+fi
+[ "$1" = "--all-agents" ] && cp "$SRC"/agents-library/*.md "$CL/agents/"
 cp -R "$SRC/skills/." "$CL/skills/"
 cp -R "$SRC/agents/." "$CL/agents/"
 cp -R "$SRC/templates" "$CL/toolkit/"
-echo "skills + agents installed in $CL"
-[ "$1" = "--light" ] && exit 0
+# routing guide -> ~/.claude/CLAUDE.md (replaces the previous toolkit block, keeps the rest)
+touch "$CL/CLAUDE.md"
+python3 - "$CL/CLAUDE.md" "$SRC/GUIDE.md" <<'PY'
+import re, sys
+p, g = sys.argv[1], open(sys.argv[2]).read().strip()
+s = re.sub(r"<!-- edunos-toolkit:start -->.*?<!-- edunos-toolkit:end -->\n?", "", open(p).read(), flags=re.S).rstrip()
+open(p, "w").write((s + "\n\n" if s else "") + g + "\n")
+PY
+echo "skills, agents and guide installed in $CL"
+[ "$1" = "--light" ] || [ "$1" = "--all-agents" ] && exit 0
 
 # Voice-over: Kokoro + Piper (models in /root/tts-models or ~/tts-models)
 M="${TTS_MODELS:-$HOME/tts-models}"; mkdir -p "$M"

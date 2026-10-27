@@ -15,7 +15,9 @@ Mes skills, agents et outils pour Claude Code, utilisables dans **n'importe quel
 | `skills/real-sfx` | Sound design avec de **vrais** sons enregistrés (whoosh, hits, UI…) calés à l'image + 78 sons UI CC0 |
 | `skills/earshot`, `skills/real-sound` | earshot : Claude « écoute » l'audio (décrire, classer, critiquer une bande-son) ; real-sound : bande-son pro à partir d'enregistrements sous licence |
 | `skills/openverse` | Chercher et télécharger sons et images libres (CC0, CC BY) via Openverse, avec CREDITS.csv |
-| `agents/` | 283 agents spécialisés (agency-agents) : marketing, design, ventes, dev… |
+| `agents/` | 49 agents actifs (agency-agents) : marketing, contenu, pub, design, dev, sécurité, tests |
+| `agents-library/` | 235 autres agents, désactivés : `sh install.sh --agent <nom>` pour en activer un, `--all-agents` pour tous |
+| `GUIDE.md` | Guide « quel outil pour quelle tâche », installé dans `~/.claude/CLAUDE.md` (lu à chaque session) |
 | `templates/canvas-film` | Exemple complet de film en code (style aquarelle, musique synthétisée) |
 | `templates/remotion` | Projet Remotion (vidéo en React) avec voix off |
 | `install.sh` | Installe tout dans `~/.claude` + voix (Kokoro, Piper) + Agent Reach + earshot |
