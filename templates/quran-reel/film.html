@@ -1,0 +1,356 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'AmiriQuran';src:url(fonts/UthmanicHafs.woff2) format('woff2')}
+@font-face{font-family:'Cormorant';src:url(fonts/CormorantGaramond-500-normal-latin.woff2) format('woff2');font-weight:500}
+@font-face{font-family:'Cormorant';src:url(fonts/CormorantGaramond-600-normal-latin.woff2) format('woff2');font-weight:600}
+@font-face{font-family:'Cormorant';src:url(fonts/CormorantGaramond-500-italic-latin.woff2) format('woff2');font-weight:500;font-style:italic}
+@font-face{font-family:'Montserrat';src:url(fonts/Montserrat-600-normal-latin.woff2) format('woff2');font-weight:600}
+@font-face{font-family:'Montserrat';src:url(fonts/Montserrat-800-normal-latin.woff2) format('woff2');font-weight:800}
+html,body{margin:0;background:#000}
+canvas{display:block;height:100vh;width:auto;margin:auto}
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="timeline.js"></script>
+<script src="verse.js"></script>
+<script>
+const W = 1080, H = 1920, DURATION = 46;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const GOLD = '#E9C77E', GOLD2 = '#F8E3AE', CREAM = '#FBF3E4';
+const TLx = window.TL, V = window.VERSE;
+
+// ---------- utils ----------
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const eio = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const eo = k => 1 - Math.pow(1 - k, 3);
+const life = (t, a, b, din = .6, dout = .6) => Math.min(eo(seg(t, a, a + din)), 1 - eio(seg(t, b - dout, b)));
+const mixc = (c1, c2, k) => { const p = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); const a = p(c1), b = p(c2); return `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], k))).join(',')})`; };
+
+function text(s, x, y, o = {}) {
+  const { size = 60, font = 'Montserrat', weight = 800, italic = false, color = '#fff', align = 'center', alpha = 1, glow = 0, glowColor = GOLD, scale = 1, blur = 0, dir = 'ltr', spacing = 0 } = o;
+  if (alpha <= 0.002) return;
+  ctx.save(); ctx.globalAlpha *= clamp(alpha);
+  ctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${font}`; ctx.direction = dir;
+  ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.letterSpacing = spacing + 'px';
+  ctx.translate(x, y); if (scale !== 1) ctx.scale(scale, scale);
+  if (blur > .2) ctx.filter = `blur(${blur}px)`;
+  if (glow) { ctx.shadowColor = glowColor; ctx.shadowBlur = glow; }
+  if (o.shadow) { ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4; }
+  ctx.fillStyle = color; ctx.fillText(s, 0, 0);
+  ctx.restore();
+}
+function measure(s, font) { ctx.font = font; return ctx.measureText(s).width; }
+
+// ---------- world ----------
+const R0 = mulberry(7);
+const STARS = Array.from({ length: 220 }, () => [R0() * W, R0() * H * .62, .5 + R0() * 1.6, R0() * 6.28]);
+const RAIN = Array.from({ length: 420 }, () => [R0() * (W + 400) - 200, R0(), 0.6 + R0() * 0.7, 30 + R0() * 50]);
+const MOTES = Array.from({ length: 90 }, () => [R0(), R0(), 1 + R0() * 3, R0() * 6.28, .3 + R0() * .7]);
+const CLOUDS = Array.from({ length: 9 }, (_, i) => [R0() * W, 120 + R0() * 700, 260 + R0() * 260, .1 + R0() * .12, R0()]);
+
+// scene parameters over time
+const P = t => ({
+  dawn: eio(seg(t, 23.8, 31)),            // night -> dawn
+  rain: 1 - eio(seg(t, 21.5, 27.5)),      // rain stops after "forgives all sins"
+  open: eio(seg(t, 12.8, 14.6)),           // door opens
+  crack: eo(seg(t, 10.6, 12.6)),           // light leaks under/through the door
+  push: eio(seg(t, 12.8, 22)),             // camera moves toward the door
+});
+
+function sky(t, p) {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, mixc('#050813', '#2B2350', p.dawn));
+  g.addColorStop(.45, mixc('#0B1430', '#8A5C7E', p.dawn));
+  g.addColorStop(.7, mixc('#14203F', '#E7A07A', p.dawn));
+  g.addColorStop(1, mixc('#1A2240', '#F6CF98', p.dawn));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // stars
+  for (const [x, y, r, ph] of STARS) {
+    const a = (1 - p.dawn) * (.25 + .5 * (.5 + .5 * Math.sin(t * 1.3 + ph))) * (1 - .6 * p.rain);
+    if (a <= 0) continue; ctx.globalAlpha = a; ctx.fillStyle = '#FFF5DD'; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // horizon glow at dawn
+  if (p.dawn > 0) {
+    const hg = ctx.createRadialGradient(W / 2, H * .78, 50, W / 2, H * .78, 1100);
+    hg.addColorStop(0, `rgba(255,214,150,${.55 * p.dawn})`); hg.addColorStop(1, 'rgba(255,214,150,0)');
+    ctx.fillStyle = hg; ctx.fillRect(0, 0, W, H);
+  }
+  // clouds
+  for (const [x0, y, r, a, s] of CLOUDS) {
+    const x = ((x0 + t * (8 + s * 10)) % (W + 2 * r)) - r;
+    const cg = ctx.createRadialGradient(x, y, 0, x, y, r);
+    const col = p.dawn > .01 ? `255,${Math.round(lerp(40, 190, p.dawn))},${Math.round(lerp(60, 170, p.dawn))}` : '40,52,85';
+    cg.addColorStop(0, `rgba(${col},${a * (0.6 + p.rain * .5)})`); cg.addColorStop(1, `rgba(${col},0)`);
+    ctx.fillStyle = cg; ctx.save(); ctx.translate(x, y); ctx.scale(1.9, .55); ctx.translate(-x, -y); ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.restore();
+  }
+}
+
+function dunes(p) {
+  const layers = [[1460, '#0E1428', '#B9786A', 60, .0021], [1560, '#0A0F1F', '#8E5A5A', 80, .0016], [1680, '#070B17', '#5E3D45', 70, .0027]];
+  layers.forEach(([y0, c1, c2, amp, f], i) => {
+    ctx.fillStyle = mixc(c1, c2, p.dawn * (1 - i * .25));
+    ctx.beginPath(); ctx.moveTo(0, H);
+    for (let x = 0; x <= W; x += 10) ctx.lineTo(x, y0 + Math.sin(x * f + i * 2) * amp + Math.sin(x * f * 2.7 + i) * amp * .35);
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  });
+}
+
+// pointed (Islamic) arch path
+function archPath(cx, top, w, h) {
+  const l = cx - w / 2, r = cx + w / 2, spring = top + w * .62;
+  ctx.beginPath(); ctx.moveTo(l, top + h); ctx.lineTo(l, spring);
+  ctx.quadraticCurveTo(l, top + w * .08, cx, top); ctx.quadraticCurveTo(r, top + w * .08, r, spring);
+  ctx.lineTo(r, top + h); ctx.closePath();
+}
+function star8(x, y, r, rot = 0) {
+  ctx.beginPath();
+  for (let i = 0; i < 16; i++) { const a = rot + i * Math.PI / 8, rr = i % 2 ? r * .62 : r; i ? ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr) : ctx.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  ctx.closePath();
+}
+
+function door(t, p) {
+  // camera push: door grows and drops slightly
+  const s = lerp(1, 1.06, p.push), cx = W / 2, w = 470 * s, h = 760 * s, top = lerp(760, 1160, p.push), base = top + h;
+  // ground shadow / light pool
+  const pool = ctx.createRadialGradient(cx, base + 10, 10, cx, base + 10, 520);
+  pool.addColorStop(0, `rgba(255,220,160,${.12 + .5 * p.open})`); pool.addColorStop(1, 'rgba(255,220,160,0)');
+  ctx.fillStyle = pool; ctx.save(); ctx.translate(cx, base + 10); ctx.scale(1, .22); ctx.translate(-cx, -(base + 10)); ctx.fillRect(cx - 600, base - 600, 1200, 1200); ctx.restore();
+  // outer frame (thick ornamental arch)
+  ctx.save();
+  archPath(cx, top - 46 * s, w + 92 * s, h + 46 * s); ctx.fillStyle = '#121A31'; ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = `rgba(233,199,126,${.55 + .45 * p.open})`; ctx.shadowColor = GOLD; ctx.shadowBlur = 12 + 30 * p.open; ctx.stroke();
+  ctx.restore();
+  // light behind the door
+  ctx.save(); archPath(cx, top, w, h); ctx.clip();
+  const lg = ctx.createRadialGradient(cx, top + h * .55, 10, cx, top + h * .55, h * .8);
+  lg.addColorStop(0, '#FFFBEF'); lg.addColorStop(.35, '#FFE6B0'); lg.addColorStop(1, '#F0B26A');
+  ctx.fillStyle = lg; ctx.fillRect(cx - w, top, 2 * w, h);
+  // two leaves swinging open (hinged at the sides)
+  const leaf = (side) => {
+    const ang = p.open * 1.35, vis = Math.cos(ang), lw = w / 2 * vis;
+    const x0 = side < 0 ? cx - w / 2 : cx + w / 2 - lw;
+    const shade = lerp(0, .45, p.open);
+    const lgr = ctx.createLinearGradient(x0, 0, x0 + lw, 0);
+    lgr.addColorStop(0, side < 0 ? '#2A2340' : '#1D1A33'); lgr.addColorStop(1, side < 0 ? '#1D1A33' : '#2A2340');
+    ctx.fillStyle = lgr; ctx.fillRect(x0, top, lw, h);
+    ctx.fillStyle = `rgba(0,0,0,${shade})`; ctx.fillRect(x0, top, lw, h);
+    // ornaments: border + 8-point stars
+    ctx.save(); ctx.translate(x0 + lw / 2, 0); ctx.scale(Math.max(.02, vis), 1); ctx.translate(-(x0 + lw / 2), 0);
+    const ix = side < 0 ? cx - w / 2 : cx, iw = w / 2;
+    const gx = side < 0 ? x0 : x0 - (iw - lw);
+    ctx.strokeStyle = `rgba(233,199,126,${.65})`; ctx.lineWidth = 2.2;
+    ctx.strokeRect(gx + 22 * s, top + h * .32, iw - 44 * s, h * .62);
+    for (let k = 0; k < 3; k++) { star8(gx + iw / 2, top + h * (.43 + k * .17), 34 * s, Math.PI / 8); ctx.stroke(); }
+    ctx.restore();
+  };
+  leaf(-1); leaf(1);
+  // light crack between the leaves before they open
+  const cr = p.crack * (1 - p.open);
+  if (cr > 0) {
+    const cg = ctx.createLinearGradient(cx - 30, 0, cx + 30, 0);
+    cg.addColorStop(0, 'rgba(255,230,170,0)'); cg.addColorStop(.5, `rgba(255,240,200,${.95 * cr})`); cg.addColorStop(1, 'rgba(255,230,170,0)');
+    ctx.fillStyle = cg; ctx.fillRect(cx - 30, top, 60, h);
+    ctx.fillStyle = `rgba(255,236,190,${.8 * cr})`; ctx.fillRect(cx - w / 2, base - 6, w, 6);
+  }
+  ctx.restore();
+  // arch top ornament
+  ctx.save(); ctx.strokeStyle = `rgba(233,199,126,${.7 + .3 * p.open})`; ctx.lineWidth = 2; ctx.shadowColor = GOLD; ctx.shadowBlur = 10 + 20 * p.open;
+  star8(cx, top - 96 * s, 22 * s, t * .15); ctx.stroke(); ctx.restore();
+  // light rays out of the open door
+  if (p.open > 0) {
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    for (let i = 0; i < 9; i++) {
+      const a = -Math.PI / 2 + (i - 4) * .24 + Math.sin(t * .3 + i) * .03, len = 1500;
+      const rg = ctx.createLinearGradient(cx, top + h * .6, cx + Math.cos(a) * len, top + h * .6 + Math.sin(a) * len);
+      rg.addColorStop(0, `rgba(255,226,170,${.16 * p.open})`); rg.addColorStop(1, 'rgba(255,226,170,0)');
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.moveTo(cx - 40, top + h * .6); ctx.lineTo(cx + Math.cos(a - .07) * len, top + h * .6 + Math.sin(a - .07) * len); ctx.lineTo(cx + Math.cos(a + .07) * len, top + h * .6 + Math.sin(a + .07) * len); ctx.lineTo(cx + 40, top + h * .6); ctx.fill();
+    }
+    const halo = ctx.createRadialGradient(cx, top + h * .5, 50, cx, top + h * .5, 900);
+    halo.addColorStop(0, `rgba(255,232,180,${.35 * p.open})`); halo.addColorStop(1, 'rgba(255,232,180,0)');
+    ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+  return { cx, top, h, base };
+}
+
+function rain(t, p) {
+  if (p.rain <= 0) return;
+  ctx.save(); ctx.strokeStyle = `rgba(190,205,235,${.32 * p.rain})`; ctx.lineWidth = 1.6; ctx.beginPath();
+  for (const [x0, ph, sp, len] of RAIN) {
+    const y = ((ph + t * sp * 1.6) % 1) * (H + 200) - 100, x = x0 + y * .18;
+    ctx.moveTo(x, y); ctx.lineTo(x + len * .18, y + len);
+  }
+  ctx.stroke(); ctx.restore();
+}
+
+function motes(t, p) {
+  const k = p.open; if (k <= 0) return;
+  ctx.save(); ctx.globalCompositeOperation = 'screen';
+  for (const [x0, y0, r, ph, sp] of MOTES) {
+    const y = H - ((y0 + t * .035 * sp) % 1) * H * .9, x = W / 2 + (x0 - .5) * 900 + Math.sin(t * .5 + ph) * 30;
+    const a = k * (.35 + .4 * Math.sin(t * 2 + ph)) * clamp((H - y) / 400);
+    ctx.fillStyle = `rgba(255,224,160,${a})`; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.28); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// rosette of 8-point stars behind the verse
+function rosette(t, a) {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a; ctx.strokeStyle = 'rgba(233,199,126,.22)'; ctx.lineWidth = 1.4;
+  const cx = W / 2, cy = 640, rot = t * .03;
+  for (let ring = 1; ring <= 3; ring++) for (let i = 0; i < 8 * ring; i++) {
+    const an = rot + i * Math.PI * 2 / (8 * ring), rr = ring * 150;
+    star8(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr * .9, 46, an); ctx.stroke();
+  }
+  star8(cx, cy, 120, rot * 2); ctx.stroke(); star8(cx, cy, 120, rot * 2 + Math.PI / 8); ctx.stroke();
+  ctx.restore();
+}
+
+function darkBand(y0, y1, a) {
+  const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, 'rgba(5,8,20,0)'); g.addColorStop(.18, `rgba(5,8,20,${.6 * a})`); g.addColorStop(.82, `rgba(5,8,20,${.6 * a})`); g.addColorStop(1, 'rgba(5,8,20,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, y0, W, y1 - y0);
+}
+// ---------- verse ----------
+const AR_Y = [430, 545, 660, 775];
+const VERSE_FOCUS = [4, 5, 6, 7]; // voice line index that reads each Arabic line
+function arabicLine(i, t, appear, alpha) {
+  const words = V.ar[i].split(' ');
+  let size = 62; const font = s => `400 ${s}px AmiriQuran`;
+  ctx.direction = 'rtl';
+  const sp = () => measure(' ', font(size));
+  let total = words.reduce((s, w) => s + measure(w, font(size)), 0) + sp() * (words.length - 1);
+  while (total > 900 && size > 30) { size -= 2; total = words.reduce((s, w) => s + measure(w, font(size)), 0) + sp() * (words.length - 1); }
+  const L = TLx[VERSE_FOCUS[i]], speaking = t >= L.start - .2 && t <= L.end + .4;
+  let x = W / 2 + total / 2; // RTL: start at the right
+  words.forEach((w, j) => {
+    const ww = measure(w, font(size));
+    const k = eo(seg(t, appear + j * .22, appear + j * .22 + .7));
+    text(w, x - ww / 2, AR_Y[i], { font: 'AmiriQuran', weight: 400, size, color: speaking ? GOLD2 : GOLD, alpha: alpha * k, glow: speaking ? 26 : 10, dir: 'rtl', blur: (1 - k) * 6 });
+    x -= ww + sp();
+  });
+  ctx.direction = 'ltr';
+}
+
+function verseBlock(t) {
+  const a = life(t, 13.2, 31.2, .8, .8);
+  if (a <= 0) return;
+  // soft dark glass behind the text for legibility
+  ctx.save(); ctx.globalAlpha = a * .55;
+  darkBand(300, 1110, 1); ctx.restore();
+  rosette(t, a * eo(seg(t, 13.2, 15.5)));
+  for (let i = 0; i < 4; i++) arabicLine(i, t, 13.6 + i * .9, a);
+  text(V.ref.toUpperCase(), W / 2, 870, { font: 'Cormorant', weight: 600, size: 30, color: GOLD, alpha: a * eo(seg(t, 16.8, 17.6)), spacing: 6 });
+  // English translation (exact Sahih International), one line at a time with the voice
+  V.en.forEach((s, i) => {
+    const L = TLx[VERSE_FOCUS[i]];
+    const k = life(t, L.start - .15, (TLx[VERSE_FOCUS[i] + 1] || L).start - .1, .5, .35) * a;
+    if (k <= 0) return;
+    wrapWords(s, 990, 54, 'italic 500', 'Cormorant', CREAM, k, L, 860);
+  });
+}
+
+// draws a sentence centred, wrapped to maxW, revealing words with their timings
+function wrapWords(s, y, size, style, font, color, alpha, L, maxW = 880, opts = {}) {
+  const words = s.split(' '); const f = `${style} ${size}px ${font}`;
+  const lines = [[]]; let lw = 0; const spw = measure(' ', f);
+  for (const w of words) { const ww = measure(w, f); if (lw + ww > maxW && lines[lines.length - 1].length) { lines.push([]); lw = 0; } lines[lines.length - 1].push(w); lw += ww + spw; }
+  const lh = size * 1.25; let idx = 0;
+  lines.forEach((ln, li) => {
+    const tw = ln.reduce((a, w) => a + measure(w, f), 0) + spw * (ln.length - 1);
+    let x = W / 2 - tw / 2; const yy = y + (li - (lines.length - 1) / 2) * lh;
+    ln.forEach(w => {
+      const wt = L.words[Math.min(idx, L.words.length - 1)].t, k = eo(seg(T, wt - .12, wt + .25));
+      const ww = measure(w, f);
+      const cur = T >= wt && (idx + 1 >= L.words.length || T < L.words[idx + 1].t);
+      ctx.save(); ctx.font = f; ctx.textBaseline = 'middle'; ctx.globalAlpha = alpha * (opts.dim ? lerp(.35, 1, k) : k);
+      ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 3;
+      ctx.fillStyle = (opts.karaoke && cur) ? GOLD2 : color;
+      const sc = opts.karaoke ? lerp(.86, 1, eo(seg(T, wt - .12, wt + .12))) : 1;
+      ctx.translate(x + ww / 2, yy + (1 - k) * 14); ctx.scale(sc, sc); ctx.textAlign = 'center'; ctx.fillText(w, 0, 0); ctx.restore();
+      x += ww + spw; idx++;
+    });
+  });
+}
+
+// reflection lines: bold karaoke subtitles in the sky
+const KARAOKE = [0, 1, 2, 3, 9, 10];
+function subtitles(t) {
+  for (const i of KARAOKE) {
+    const L = TLx[i], next = TLx[i + 1];
+    const end = i === 3 ? L.end + .5 : (next ? Math.min(next.start - .1, L.end + 1.2) : L.end + 1.0);
+    const a = life(t, L.start - .2, end, .25, .35);
+    if (a <= 0) continue;
+    const y = i >= 9 ? 330 : 470;
+    wrapWords(L.text, y, 64, '800', 'Montserrat', '#FFFFFF', a, L, 860, { karaoke: true });
+  }
+}
+
+// "Not some sins. All of them." + "My servants"
+function emphasis(t) {
+  const L8 = TLx[8];
+  const a = life(t, L8.start - .2, 33.4, .3, .5);
+  const band = Math.max(a, life(t, TLx[9].start - .3, 38.2, .5, .5));
+  if (band > 0) { ctx.save(); darkBand(250, 1250, band); ctx.restore(); }
+  if (a > 0) {
+    const w = L8.words; // Not some sins. All of them.
+    const k1 = eo(seg(t, w[0].t - .1, w[0].t + .3)), k2 = eo(seg(t, w[3].t - .15, w[3].t + .35));
+    text('Not some sins.', W / 2, 500, { size: 66, color: '#fff', alpha: a * k1 * lerp(1, .55, k2), shadow: true });
+    text('ALL', W / 2, 730, { font: 'Cormorant', weight: 600, size: 300, color: GOLD2, alpha: a * k2, glow: 50, scale: lerp(1.25, 1, k2), spacing: 8 });
+    text('of them.', W / 2, 890, { font: 'Cormorant', weight: 500, italic: true, size: 70, color: CREAM, alpha: a * eo(seg(t, w[4].t - .1, w[4].t + .3)) });
+    text(V.all, W / 2, 1000, { font: 'AmiriQuran', weight: 400, size: 96, color: GOLD, alpha: a * k2 * .95, glow: 24, dir: 'rtl' });
+  }
+  const L9 = TLx[9], ws = L9.words, iMy = ws.findIndex(x => x.w === 'My');
+  const b = life(t, ws[iMy].t - .3, 38.2, .6, .5);
+  if (b > 0) {
+    text(V.servants, W / 2, 760, { font: 'AmiriQuran', weight: 400, size: 190, color: GOLD2, alpha: b, glow: 40, dir: 'rtl', scale: lerp(.92, 1, b) });
+    text('"O My servants"', W / 2, 980, { font: 'Cormorant', weight: 500, italic: true, size: 72, color: CREAM, alpha: b * eo(seg(t, ws[iMy].t, ws[iMy].t + .6)) });
+  }
+}
+
+function endCard(t) {
+  const a = eo(seg(t, 41.4, 42.4));
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a * .82; ctx.fillStyle = '#0A0D1C'; ctx.fillRect(0, 0, W, H); ctx.restore();
+  rosette(t, a * .8);
+  text('Never despair of', W / 2, 520, { font: 'Cormorant', weight: 500, italic: true, size: 84, color: CREAM, alpha: a });
+  text("Allah's mercy.", W / 2, 625, { font: 'Cormorant', weight: 600, size: 110, color: GOLD2, alpha: a * eo(seg(t, 41.7, 42.6)), glow: 22 });
+  text(V.despair, W / 2, 800, { font: 'AmiriQuran', weight: 400, size: 76, color: GOLD, alpha: a * eo(seg(t, 42.1, 43.1)), glow: 16, dir: 'rtl' });
+  text(V.ref.toUpperCase(), W / 2, 925, { font: 'Cormorant', weight: 600, size: 32, color: GOLD, alpha: a * eo(seg(t, 42.4, 43.2)), spacing: 6 });
+  ctx.save(); ctx.globalAlpha = a * eo(seg(t, 43, 43.8)); ctx.strokeStyle = 'rgba(233,199,126,.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W / 2 - 90, 1000); ctx.lineTo(W / 2 + 90, 1000); ctx.stroke(); ctx.restore();
+  text('Send this to someone', W / 2, 1090, { size: 46, weight: 600, color: '#fff', alpha: a * eo(seg(t, 43.2, 44)), shadow: true });
+  text('who needs it today.', W / 2, 1150, { size: 46, weight: 600, color: '#fff', alpha: a * eo(seg(t, 43.3, 44.1)), shadow: true });
+}
+
+let T = 0;
+function renderAt(t) {
+  T = t; const p = P(t);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
+  // slow cinematic drift
+  const z = 1 + .04 * seg(t, 0, DURATION);
+  ctx.translate(W / 2, H * .6); ctx.scale(z, z); ctx.translate(-W / 2, -H * .6);
+  sky(t, p); dunes(p); door(t, p); rain(t, p); motes(t, p);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // vignette
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * .3, W / 2, H / 2, H * .75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(0,0,0,${.55 - .25 * p.dawn})`);
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  // lightning flash with the opening thunder
+  const fl = Math.max(0, 1 - Math.abs(t - 1.15) / .12) * .35 + Math.max(0, 1 - Math.abs(t - 1.42) / .08) * .2;
+  if (fl > 0) { ctx.fillStyle = `rgba(200,215,255,${fl})`; ctx.fillRect(0, 0, W, H); }
+  verseBlock(t); subtitles(t); emphasis(t); endCard(t);
+  const fade = Math.max(1 - seg(t, 0, .6), seg(t, 45.2, 46));
+  if (fade > 0) { ctx.fillStyle = `rgba(0,0,0,${fade})`; ctx.fillRect(0, 0, W, H); }
+}
+
+window.ready = (async () => {
+  await Promise.all(['400 40px AmiriQuran', '500 40px Cormorant', '600 40px Cormorant', 'italic 500 40px Cormorant', '600 40px Montserrat', '800 40px Montserrat'].map(f => document.fonts.load(f, f.includes('Amiri') ? 'قُلْ' : 'Aa')));
+  window.renderAt = renderAt; renderAt(+new URLSearchParams(location.search).get('t') || 0);
+  if (location.search.includes('play')) { const s = performance.now(); const loop = () => { renderAt(((performance.now() - s) / 1000) % DURATION); requestAnimationFrame(loop); }; loop(); }
+  return true;
+})();
+</script></body></html>
