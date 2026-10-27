@@ -1,0 +1,44 @@
+[
+ {
+  "i": 0,
+  "text": "Everyone keeps asking what app made these videos.",
+  "file": "voice/l00.wav",
+  "dur": 2.837
+ },
+ {
+  "i": 1,
+  "text": "Here's the secret: there's no app.",
+  "file": "voice/l01.wav",
+  "dur": 2.048
+ },
+ {
+  "i": 2,
+  "text": "No editing. They're written.",
+  "file": "voice/l02.wav",
+  "dur": 1.771
+ },
+ {
+  "i": 3,
+  "text": "You describe the video to Claude, and it builds every frame, the sound, everything.",
+  "file": "voice/l03.wav",
+  "dur": 4.992
+ },
+ {
+  "i": 4,
+  "text": "Animated reels, cinematic quotes, launch trailers. Even if you've never edited anything.",
+  "file": "voice/l04.wav",
+  "dur": 5.632
+ },
+ {
+  "i": 5,
+  "text": "Prompt to Reel shows you exactly how, step by step, with fifty-six prompts ready to copy.",
+  "file": "voice/l05.wav",
+  "dur": 5.717
+ },
+ {
+  "i": 6,
+  "text": "Your first video is closer than you think. The link is in my bio.",
+  "file": "voice/l06.wav",
+  "dur": 4.181
+ }
+]

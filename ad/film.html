@@ -1,0 +1,282 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'Grotesk';src:url(SpaceGrotesk-500-normal-latin.woff2) format('woff2');font-weight:500}
+@font-face{font-family:'Grotesk';src:url(SpaceGrotesk-700-normal-latin.woff2) format('woff2');font-weight:700}
+@font-face{font-family:'Serif';src:url(InstrumentSerif-400-italic-latin.woff2) format('woff2');font-style:italic}
+@font-face{font-family:'Mono';src:url(JetBrainsMono-600-normal-latin.woff2) format('woff2');font-weight:600}
+html,body{margin:0;background:#000} canvas{display:block;height:100vh;width:auto;margin:auto}
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="timeline.js"></script>
+<script>
+const W = 1080, H = 1920, DURATION = 32.5;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const C = { night: '#141327', night2: '#0B0A18', violet: '#6B4EFF', lilac: '#B9A9FF', coral: '#FF5A3C', amber: '#F2A20C', cream: '#F4F1FA', muted: '#9C97B8', glass: 'rgba(255,255,255,.07)' };
+const TLx = window.TL;
+
+// ---------- utils ----------
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const eo = k => 1 - Math.pow(1 - k, 3);
+const eio = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const back = k => { const c1 = 1.6, c3 = c1 + 1; return k <= 0 ? 0 : 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+const pop = (t, a, d = .4) => back(seg(t, a, a + d));
+const life = (t, a, b, din = .4, dout = .35) => Math.min(eo(seg(t, a, a + din)), 1 - eio(seg(t, b - dout, b)));
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function txt(s, x, y, o = {}) {
+  const { size = 60, font = 'Grotesk', weight = 700, italic = false, color = C.cream, align = 'center', alpha = 1, scale = 1, spacing = 0, glow = 0, rot = 0 } = o;
+  if (alpha <= .003) return;
+  ctx.save(); ctx.globalAlpha *= clamp(alpha); ctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px ${font}`;
+  ctx.letterSpacing = spacing + 'px'; ctx.textAlign = align; ctx.textBaseline = 'middle';
+  ctx.translate(x, y); if (rot) ctx.rotate(rot); if (scale !== 1) ctx.scale(scale, scale);
+  if (glow) { ctx.shadowColor = o.glowColor || C.violet; ctx.shadowBlur = glow; }
+  ctx.fillStyle = color; ctx.fillText(s, 0, 0); ctx.restore();
+}
+function measure(s, f) { ctx.font = f; ctx.letterSpacing = '0px'; return ctx.measureText(s).width; }
+
+// ---------- assets ----------
+const SEQ = {};
+function loadSeq(name, n) { SEQ[name] = Array.from({ length: n }, (_, i) => { const im = new Image(); im.src = `seq/${name}/${String(i + 1).padStart(3, '0')}.jpg`; return im; }); }
+['sleep', 'mercy', 'trailer', 'sleepb', 'mercyb'].forEach(n => loadSeq(n, 60));
+const COVER = new Image(); COVER.src = 'cover.jpg';
+const seqFrame = (name, t) => SEQ[name][Math.floor(((t % 4) + 4) % 4 * 15) % 60];
+
+// a phone that plays an image sequence
+function phone(x, y, w, name, t, o = {}) {
+  const h = w * 16 / 9, r = w * .11;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(o.rot || 0); ctx.scale(o.scale || 1, o.scale || 1); ctx.globalAlpha *= o.alpha ?? 1;
+  ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 50; ctx.shadowOffsetY = 24;
+  ctx.fillStyle = '#05040C'; rr(-w / 2 - 12, -h / 2 - 12, w + 24, h + 24, r + 10); ctx.fill(); ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = 'rgba(185,169,255,.35)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.save(); rr(-w / 2, -h / 2, w, h, r); ctx.clip();
+  const im = seqFrame(name, t + (o.offset || 0)); if (im.complete) ctx.drawImage(im, -w / 2, -h / 2, w, h);
+  const g = ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); g.addColorStop(0, 'rgba(255,255,255,.10)'); g.addColorStop(.4, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.fillRect(-w / 2, -h / 2, w, h); ctx.restore();
+  ctx.fillStyle = '#05040C'; rr(-w * .14, -h / 2 + 10, w * .28, 22, 11); ctx.fill();
+  ctx.restore();
+}
+
+// ---------- background ----------
+const R0 = mulberry(5);
+const DUST = Array.from({ length: 70 }, () => [R0(), R0(), .6 + R0() * 1.8, R0() * 6.28, .2 + R0() * .8]);
+function background(t) {
+  ctx.fillStyle = C.night; ctx.fillRect(0, 0, W, H);
+  const orb = (x, y, r, col, a) => { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col.replace(')', `,${a})`).replace('rgb', 'rgba')); g.addColorStop(1, col.replace(')', ',0)').replace('rgb', 'rgba')); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); };
+  orb(820 + Math.sin(t * .3) * 120, 300 + Math.cos(t * .25) * 90, 760, 'rgb(107,78,255)', .55);
+  orb(180 + Math.cos(t * .22) * 120, 1500 + Math.sin(t * .3) * 120, 720, 'rgb(255,90,60)', .38);
+  orb(560, 980 + Math.sin(t * .4) * 60, 520, 'rgb(242,162,12)', .10);
+  ctx.strokeStyle = 'rgba(255,255,255,.035)'; ctx.lineWidth = 1;
+  for (let x = 0; x <= W; x += 72) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y <= H; y += 72) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  for (const [x, y, r, p, s] of DUST) { const yy = ((y - t * .02 * s) % 1 + 1) % 1; ctx.globalAlpha = .25 + .35 * Math.sin(t * 2 + p); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x * W, yy * H, r, 0, 6.28); ctx.fill(); }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- subtitles (karaoke, current word in a coral pill) ----------
+function subtitles(t) {
+  TLx.forEach((L, i) => {
+    const next = TLx[i + 1]; const end = next ? Math.min(next.start - .05, L.end + .5) : L.end + .8;
+    const a = life(t, L.start - .15, end, .2, .25); if (a <= 0) return;
+    // show the current chunk of up to 4 words
+    const words = L.words; let cur = words.findIndex((w, k) => t >= w.t && (k + 1 >= words.length || t < words[k + 1].t)); if (cur < 0) cur = 0;
+    const c0 = Math.floor(cur / 4) * 4, chunk = words.slice(c0, c0 + 4);
+    const f = '700 60px Grotesk', sp = 18;
+    const ws = chunk.map(w => measure(w.w, f)); const tw = ws.reduce((x, y) => x + y, 0) + sp * (chunk.length - 1);
+    let x = W / 2 - tw / 2; const y = 1440;
+    chunk.forEach((w, k) => {
+      const on = c0 + k === cur && t >= w.t, kk = pop(t, w.t - .05, .25);
+      if (on) { ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = C.coral; rr(x - 12, y - 42, ws[k] + 24, 84, 18); ctx.fill(); ctx.restore(); }
+      ctx.save(); ctx.globalAlpha = a * (t >= w.t - .05 ? 1 : .35); ctx.font = f; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 14; ctx.fillStyle = '#fff';
+      ctx.translate(x + ws[k] / 2, y); const sc = lerp(.85, 1, clamp(kk)); ctx.scale(sc, sc); ctx.fillText(w.w, 0, 3); ctx.restore();
+      x += ws[k] + sp;
+    });
+  });
+}
+
+// ---------- scenes ----------
+const L = i => TLx[i];
+const COMMENTS = ['What app is this??', 'tutorial please', 'how do you make these', 'which app?!', 'teach me', 'I NEED this', 'editing skills 100', 'what software??'];
+
+function sHook(t) {
+  const a = 1 - eio(seg(t, 3.3, 3.8)); if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  const z = 1 + .05 * seg(t, 0, 3.8); ctx.translate(W / 2, 860); ctx.scale(z, z); ctx.translate(-W / 2, -860);
+  phone(270, 860, 300, 'mercy', t, { rot: -.12, scale: pop(t, .05), offset: 0 });
+  phone(810, 860, 300, 'trailer', t, { rot: .12, scale: pop(t, .15), offset: 1 });
+  phone(540, 820, 330, 'sleep', t, { scale: pop(t, 0), offset: 2 });
+  ctx.restore();
+  // comment storm
+  const R = mulberry(9);
+  const POS = [[300, 330], [790, 420], [270, 1250], [800, 1170], [560, 250], [300, 560], [800, 1060], [740, 1310]];
+  COMMENTS.forEach((s, i) => {
+    const at = .35 + i * .3, k = pop(t, at, .35); const [x, y] = POS[i];
+    if (k <= 0) return;
+    const f = '700 38px Grotesk', w = measure(s, f) + 70;
+    ctx.save(); ctx.globalAlpha = a * clamp(k); ctx.translate(clamp(x, w / 2 + 40, W - w / 2 - 40), y); ctx.scale(lerp(.5, 1, k), lerp(.5, 1, k)); ctx.rotate((R() - .5) * .12);
+    ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = 20; ctx.fillStyle = '#FFFFFF'; rr(-w / 2, -38, w, 76, 38); ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.fillStyle = ['#FF5A3C', '#6B4EFF', '#F2A20C', '#13A57F'][i % 4]; ctx.beginPath(); ctx.arc(-w / 2 + 34, 0, 16, 0, 6.28); ctx.fill();
+    ctx.font = f; ctx.fillStyle = '#17161F'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(s, -w / 2 + 60, 2); ctx.restore();
+  });
+}
+
+function sNoApp(t) {
+  const a = life(t, 3.4, 8.1, .25, .35); if (a <= 0) return;
+  // app icons crossed out
+  const icons = [['#7B61FF', 'Pr'], ['#00C2FF', 'Ae'], ['#111', 'Cc'], ['#FF4F8B', 'In'], ['#2BD9A0', 'Ca'], ['#F2A20C', 'Fx']];
+  icons.forEach(([col, s], i) => {
+    const x = 220 + (i % 3) * 320, y = 600 + Math.floor(i / 3) * 300, k = pop(t, 3.45 + i * .07, .35);
+    ctx.save(); ctx.globalAlpha = a * clamp(k) * (1 - .6 * seg(t, 5.8, 6.3)); ctx.translate(x, y); ctx.scale(lerp(.4, 1, k), lerp(.4, 1, k));
+    ctx.fillStyle = col; rr(-90, -90, 180, 180, 44); ctx.fill(); ctx.font = '700 70px Grotesk'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, 0, 4);
+    const x1 = eio(seg(t, 4.3 + i * .05, 4.6 + i * .05));
+    ctx.strokeStyle = C.coral; ctx.lineWidth = 16; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-100, -100); ctx.lineTo(-100 + 200 * x1, -100 + 200 * x1); ctx.stroke();
+    ctx.restore();
+  });
+  txt('no app.', W / 2, 360, { size: 150, alpha: a * eo(seg(t, 4.1, 4.5)), scale: lerp(1.3, 1, eo(seg(t, 4.1, 4.5))), glow: 30, glowColor: C.coral });
+  // "No editing. They're written." : a timeline editor collapses into one line of text
+  const k2 = seg(t, 5.9, 6.6), coll = eio(seg(t, 6.6, 7.2));
+  if (k2 > 0) {
+    ctx.save(); ctx.globalAlpha = a * eo(k2);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) {
+      const x = 140 + c * 140, y = 1000 + r * 70 * (1 - coll);
+      ctx.fillStyle = ['#7B61FF', '#00C2FF', '#FF4F8B', '#2BD9A0'][r]; ctx.globalAlpha = a * eo(k2) * (1 - coll * .9); rr(x, y, 120 * (0.6 + .4 * Math.sin(r + c)), 50, 10); ctx.fill();
+    }
+    ctx.restore();
+    const w1 = measure("They're ", '700 110px Grotesk'), w2 = measure('written.', 'italic 400 140px Serif'), x0 = W / 2 - (w1 + w2) / 2;
+    txt("They're", x0, 1110, { size: 110, weight: 700, align: 'left', alpha: a * eo(seg(t, 6.9, 7.3)) });
+    txt('written.', x0 + w1, 1110, { align: 'left', font: 'Serif', weight: 400, italic: true, size: 140, color: C.lilac, alpha: a * eo(seg(t, 7.0, 7.4)), glow: 24 });
+  }
+}
+
+const PROMPT = 'Make a 30 s 9:16 reel about my 5 favourite morning habits…';
+function sPrompt(t) {
+  const a = life(t, 8.1, 13.7, .35, .4); if (a <= 0) return;
+  const k = pop(t, 8.15, .45);
+  ctx.save(); ctx.globalAlpha = a * clamp(k); ctx.translate(W / 2, 520); ctx.scale(lerp(.8, 1, k), lerp(.8, 1, k));
+  ctx.fillStyle = 'rgba(255,255,255,.08)'; rr(-440, -150, 880, 300, 34); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = C.lilac; ctx.font = '700 26px Grotesk'; ctx.textAlign = 'left'; ctx.fillText('Claude', -400, -100);
+  // typed prompt
+  const n = Math.floor(PROMPT.length * seg(t, 8.5, 10.3)); const shown = PROMPT.slice(0, n);
+  ctx.font = '600 34px Mono'; ctx.fillStyle = '#fff'; const lines = [shown.slice(0, 30), shown.slice(30)];
+  lines.forEach((s, i) => ctx.fillText(s, -400, -30 + i * 50));
+  if (Math.floor(t * 3) % 2 === 0 && n < PROMPT.length) { ctx.fillStyle = C.coral; const lw = ctx.measureText(lines[n > 30 ? 1 : 0]).width; ctx.fillRect(-400 + lw + 4, -55 + (n > 30 ? 50 : 0), 4, 40); }
+  const gp = pop(t, 10.4, .3); ctx.fillStyle = C.violet; rr(300 - 10 * (1 - gp), 70, 110, 56, 16); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '700 28px Grotesk'; ctx.textAlign = 'center'; ctx.fillText('Go', 355, 100);
+  ctx.restore();
+  // film strip streaming out: frames, then waveform, then MP4 ✓
+  const s0 = 10.6;
+  if (t > s0) {
+    const names = ['sleepb', 'mercyb', 'trailer', 'sleep', 'mercy'];
+    ctx.save(); ctx.globalAlpha = a; const off = (t - s0) * 260;
+    for (let i = 0; i < 9; i++) {
+      const x = W + 120 - off + i * 230; if (x < -200 || x > W + 200) continue;
+      ctx.fillStyle = '#05040C'; rr(x - 100, 760, 200, 330, 18); ctx.fill();
+      const im = seqFrame(names[i % 5], t + i); if (im.complete) { ctx.save(); rr(x - 90, 772, 180, 306, 12); ctx.clip(); ctx.drawImage(im, x - 90, 772, 180, 320); ctx.restore(); }
+      for (let h = 0; h < 4; h++) { ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x - 86 + h * 50, 762, 22, 6); ctx.fillRect(x - 86 + h * 50, 1082, 22, 6); }
+    }
+    ctx.restore();
+    // waveform
+    const wk = eo(seg(t, 11.4, 12)); ctx.save(); ctx.globalAlpha = a * wk; ctx.strokeStyle = C.amber; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    for (let i = 0; i < 40; i++) { const x = 160 + i * 19, hh = 14 + 46 * Math.abs(Math.sin(i * .7 + t * 6) * Math.sin(i * .23 + t)); ctx.beginPath(); ctx.moveTo(x, 1200 - hh); ctx.lineTo(x, 1200 + hh); ctx.stroke(); }
+    ctx.restore();
+    [['frames', 11.2], ['sound', 11.9], ['MP4', 12.6]].forEach(([s, at], i) => {
+      const kk = pop(t, at, .35); if (kk <= 0) return;
+      ctx.save(); ctx.globalAlpha = a * clamp(kk); ctx.translate(250 + i * 290, 1310); ctx.scale(lerp(.6, 1, kk), lerp(.6, 1, kk));
+      ctx.fillStyle = 'rgba(19,165,127,.18)'; rr(-120, -38, 240, 76, 38); ctx.fill(); ctx.strokeStyle = '#2BD9A0'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.font = '700 32px Grotesk'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s + ' ✓', 0, 2); ctx.restore();
+    });
+  }
+}
+
+function sShowcase(t) {
+  const a = life(t, 13.6, 20.0, .35, .4); if (a <= 0) return;
+  const items = [['sleepb', 'Animated reels', 13.9], ['mercy', 'Cinematic quotes', 15.1], ['trailer', 'Launch trailers', 16.4]];
+  const slide = eio(seg(t, 13.6, 14.3));
+  items.forEach(([name, label, at], i) => {
+    const focus = t >= at ? 1 : 0, k = pop(t, at - .1, .45);
+    const x = 540 + (i - 1) * 330 + (1 - slide) * 600, y = 820;
+    const active = (t >= at && (i === 2 || t < items[i + 1][2])) || (t > 17.6);
+    ctx.save(); ctx.globalAlpha = a; phone(x, y, active ? 300 : 250, name, t, { rot: (i - 1) * .06, alpha: active ? 1 : .55, offset: i });
+    ctx.restore();
+    const solo = t < 17.6 ? (active ? 1 : 0) : 0;
+    txt(label, W / 2, 1220, { size: 64, alpha: a * clamp(k) * solo, scale: lerp(.85, 1, clamp(k)) });
+  });
+  if (t > 17.6) ['Reels', 'Quotes', 'Trailers'].forEach((s2, i) => txt(s2, 540 + (i - 1) * 330, 1220, { size: 44, alpha: a * eo(seg(t, 17.6 + i * .1, 18 + i * .1)) }));
+  // "Even if you've never edited anything."
+  const L4 = L(4), ei = L4.words.findIndex(w => w.w.toLowerCase().startsWith('even'));
+  const ke = eo(seg(t, L4.words[ei].t - .1, L4.words[ei].t + .4));
+  txt('Zero editing experience needed', W / 2, 330, { font: 'Serif', weight: 400, italic: true, size: 64, color: C.amber, alpha: a * ke, glow: 16, glowColor: C.amber });
+}
+
+function sBook(t) {
+  const a = life(t, 19.9, 26.2, .4, .4); if (a <= 0) return;
+  const k = eo(seg(t, 19.9, 20.8)), fl = Math.sin(t * 1.4) * 10;
+  // 3D-ish cover with glow
+  ctx.save(); ctx.globalAlpha = a * k; ctx.translate(W / 2, 720 + fl + (1 - k) * 120);
+  const g = ctx.createRadialGradient(0, 0, 50, 0, 0, 520); g.addColorStop(0, 'rgba(107,78,255,.55)'); g.addColorStop(1, 'rgba(107,78,255,0)'); ctx.fillStyle = g; ctx.fillRect(-520, -520, 1040, 1040);
+  ctx.transform(1, -.04, Math.sin(t * .8) * .03, 1, 0, 0);
+  const w = 420, h = w * 1.414;
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 30; ctx.fillStyle = '#000'; rr(-w / 2, -h / 2, w, h, 12); ctx.fill(); ctx.shadowColor = 'transparent';
+  ctx.fillStyle = '#E9E6F5'; rr(-w / 2 + 8, -h / 2 + 8, w, h, 12); ctx.fill();
+  ctx.save(); rr(-w / 2, -h / 2, w, h, 12); ctx.clip(); if (COVER.complete) ctx.drawImage(COVER, -w / 2, -h / 2, w, h);
+  const sh = ctx.createLinearGradient(-w / 2, 0, w / 2, 0); const p = (t * .25) % 1.6 - .3; sh.addColorStop(clamp(p - .1), 'rgba(255,255,255,0)'); sh.addColorStop(clamp(p), 'rgba(255,255,255,.22)'); sh.addColorStop(clamp(p + .1), 'rgba(255,255,255,0)');
+  ctx.fillStyle = sh; ctx.fillRect(-w / 2, -h / 2, w, h); ctx.restore();
+  ctx.restore();
+  const chips = [['Step-by-step setup', C.violet], ['56 copy-paste prompts', C.coral], ['Free starter kit', '#13A57F']];
+  const L5 = L(5), find = s => (L5.words.find(w => w.w.toLowerCase().startsWith(s)) || L5.words[0]).t;
+  const times = [find('step'), find('fifty'), find('copy') + .5];
+  chips.forEach(([s, col], i) => {
+    const kk = pop(t, times[i], .4); if (kk <= 0) return;
+    const f = '700 40px Grotesk', w = measure(s, f) + 70; const y = 1150 + i * 96;
+    ctx.save(); ctx.globalAlpha = a * clamp(kk); ctx.translate(W / 2, y); ctx.scale(lerp(.5, 1, kk), lerp(.5, 1, kk));
+    ctx.fillStyle = col; rr(-w / 2, -38, w, 76, 38); ctx.fill(); ctx.font = f; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, 0, 3); ctx.restore();
+  });
+}
+
+function sCTA(t) {
+  const a = eo(seg(t, 26.2, 26.7)); if (a <= 0) return;
+  txt('Your first video', W / 2, 480, { size: 84, alpha: a * eo(seg(t, 26.3, 26.8)) });
+  txt('is closer than you think.', W / 2, 580, { font: 'Serif', weight: 400, italic: true, size: 84, color: C.lilac, alpha: a * eo(seg(t, 26.6, 27.1)) });
+  // small cover + phones fan
+  phone(300, 930, 210, 'sleepb', t, { rot: -.16, alpha: a * .9 }); phone(780, 930, 210, 'mercy', t, { rot: .16, alpha: a * .9 });
+  if (COVER.complete) { ctx.save(); ctx.globalAlpha = a; ctx.translate(W / 2, 920 + Math.sin(t * 1.5) * 8); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 40; ctx.drawImage(COVER, -150, -212, 300, 424); ctx.restore(); }
+  const kb = pop(t, L(6).words.find(w => w.w.toLowerCase().startsWith('link')).t - .1, .45), pulse = 1 + .04 * Math.sin(t * 7);
+  if (kb > 0) {
+    ctx.save(); ctx.globalAlpha = a * clamp(kb); ctx.translate(W / 2, 1270); ctx.scale(lerp(.5, 1, kb) * pulse, lerp(.5, 1, kb) * pulse);
+    ctx.shadowColor = C.coral; ctx.shadowBlur = 40; ctx.fillStyle = C.coral; rr(-260, -56, 520, 112, 56); ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.font = '700 52px Grotesk'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('LINK IN BIO', 0, 3); ctx.restore();
+  }
+  txt('Prompt to Reel · the complete beginner\'s guide', W / 2, 1560, { size: 30, weight: 500, color: C.muted, alpha: a * eo(seg(t, 29.5, 30.2)) });
+  txt('Independent guide, not affiliated with Anthropic.', W / 2, 1605, { size: 22, weight: 500, color: '#6E6A88', alpha: a * eo(seg(t, 29.5, 30.2)) });
+}
+
+function renderAt(t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none';
+  background(t);
+  sHook(t); sNoApp(t); sPrompt(t); sShowcase(t); sBook(t); sCTA(t);
+  subtitles(t);
+  // flash on hard cuts
+  for (const c of [3.4, 8.1, 13.6, 19.9, 26.2]) { const f = Math.max(0, 1 - Math.abs(t - c) / .12); if (f > 0) { ctx.fillStyle = `rgba(255,255,255,${f * .18})`; ctx.fillRect(0, 0, W, H); } }
+  const fade = Math.max(1 - seg(t, 0, .25), seg(t, 32.0, 32.5)); if (fade > 0) { ctx.fillStyle = `rgba(0,0,0,${fade})`; ctx.fillRect(0, 0, W, H); }
+}
+window.CUES = [
+  ...COMMENTS.map((_, i) => ({ t: .35 + i * .3, kind: 'pop' })),
+  { t: 3.4, kind: 'whoosh' }, ...[0, 1, 2, 3, 4, 5].map(i => ({ t: 4.3 + i * .05, kind: 'tick' })), { t: 4.1, kind: 'hit' },
+  { t: 6.6, kind: 'swipe' }, { t: 7.0, kind: 'sparkle' }, { t: 8.1, kind: 'whoosh' },
+  ...Array.from({ length: 12 }, (_, i) => ({ t: 8.5 + i * .15, kind: 'type' })), { t: 10.4, kind: 'press' },
+  { t: 11.2, kind: 'check' }, { t: 11.9, kind: 'check' }, { t: 12.6, kind: 'success' },
+  { t: 13.6, kind: 'whoosh' }, { t: 13.9, kind: 'pop' }, { t: 15.1, kind: 'pop' }, { t: 16.4, kind: 'pop' },
+  { t: 19.9, kind: 'whoosh' }, { t: 20.2, kind: 'hit' }, { t: 26.2, kind: 'whoosh' },
+];
+window.ready = (async () => {
+  await Promise.all(['500 40px Grotesk', '700 40px Grotesk', 'italic 400 40px Serif', '600 30px Mono'].map(f => document.fonts.load(f)));
+  await Promise.all([COVER, ...Object.values(SEQ).flat()].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; })));
+  // chips/cta cues need word timings
+  const L5 = TLx[5], L6 = TLx[6], f = (L, s) => (L.words.find(w => w.w.toLowerCase().startsWith(s)) || L.words[0]).t;
+  window.CUES.push({ t: f(L5, 'step'), kind: 'pop' }, { t: f(L5, 'fifty'), kind: 'pop' }, { t: f(L5, 'copy') + .5, kind: 'pop' }, { t: f(L6, 'link') - .1, kind: 'success' });
+  window.renderAt = renderAt; renderAt(+new URLSearchParams(location.search).get('t') || 0);
+  return true;
+})();
+</script></body></html>
