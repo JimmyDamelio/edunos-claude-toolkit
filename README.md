@@ -1,0 +1,38 @@
+# Edunos Claude Toolkit
+
+Mes skills, agents et outils pour Claude Code, utilisables dans **n'importe quel projet**.
+
+## Contenu
+
+| Dossier | Quoi |
+|---|---|
+| `skills/video-in-code` | Faire des vidéos en code (trailers, pubs, Reels/TikTok, explainers) avec musique et voix off |
+| `skills/motion-design` | Principes d'animation (LottieFiles) |
+| `skills/gsap-*` | GSAP officiel (GreenSock) : timelines, easing, plugins |
+| `skills/threejs-*` | Three.js : 3D, lumières, shaders, post-processing |
+| `skills/design-dna` | Extraire un style depuis des références et le réappliquer |
+| `skills/cast`, `paint`, `bunshin` (+ `_jutsu/`) | genjutsu : animation et direction artistique pour sites et applis |
+| `agents/` | 283 agents spécialisés (agency-agents) : marketing, design, ventes, dev… |
+| `templates/canvas-film` | Exemple complet de film en code (style aquarelle, musique synthétisée) |
+| `templates/remotion` | Projet Remotion (vidéo en React) avec voix off |
+| `install.sh` | Installe tout dans `~/.claude` + voix (Kokoro, Piper) + Agent Reach |
+
+## Installation
+
+**Sessions cloud (claude.ai/code)** : dans les réglages de l'environnement, *Setup script*, ajouter :
+
+```bash
+git clone --depth 1 https://github.com/JimmyDamelio/edunos-claude-toolkit /tmp/edunos-toolkit && sh /tmp/edunos-toolkit/install.sh
+```
+
+**Sur ton ordinateur** :
+
+```bash
+git clone https://github.com/JimmyDamelio/edunos-claude-toolkit && sh edunos-claude-toolkit/install.sh
+```
+
+`sh install.sh --light` installe seulement les skills et agents (sans téléchargements).
+
+## Sources (licence MIT)
+
+LottieFiles/motion-design-skill · greensock/gsap-skills · CloudAI-X/threejs-skills · zanwei/design-dna · AThevon/genjutsu · msitarzewski/agency-agents · Panniantong/Agent-Reach · thewh1teagle/kokoro-onnx · rhasspy/piper. Leurs licences sont conservées dans les dossiers concernés.
