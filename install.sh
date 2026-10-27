@@ -28,4 +28,13 @@ done
 # Agent Reach: read X/Twitter, YouTube subtitles, Reddit, GitHub… (read-only)
 export PATH="$HOME/.local/bin:$PATH"
 command -v agent-reach >/dev/null || { uv tool install -q https://github.com/Panniantong/Agent-Reach/releases/latest/download/agent-reach.zip && agent-reach setup >/dev/null; }
+# earshot: lets Claude "listen" to audio (describe, rank, critique a soundtrack). CPU torch + package; models download on first use.
+if [ ! -x "$HOME/.earshot-venv/bin/earshot" ]; then
+  python3 -m venv "$HOME/.earshot-venv"
+  "$HOME/.earshot-venv/bin/pip" install -q torch --index-url https://download.pytorch.org/whl/cpu
+  "$HOME/.earshot-venv/bin/pip" install -q "earshot[mcp] @ git+https://github.com/Leonxlnx/earshot"
+fi
+mkdir -p "$HOME/.local/bin" "$HOME/.earshot"; ln -sf "$HOME/.earshot-venv/bin/earshot" "$HOME/.local/bin/earshot"
+grep -q EARSHOT_HOME "$HOME/.bashrc" 2>/dev/null || echo 'export EARSHOT_HOME="$HOME/.earshot"; export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+
 echo "toolkit ready: voices in $M, agent-reach $(agent-reach version 2>/dev/null | grep -o '"version": "[^"]*"' | cut -d'"' -f4)"
