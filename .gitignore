@@ -5,3 +5,8 @@ ad/stills/
 ad/node_modules
 ad/audio_raw.wav
 proof/node_modules
+landing/node_modules
+landing/shot-*.png
+landing/s?.png
+landing/all.png
+landing/*-top.png
