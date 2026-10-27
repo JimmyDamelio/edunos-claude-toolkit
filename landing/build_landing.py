@@ -11,6 +11,8 @@ def bubbles(items):
 src = src.replace("{{BUBBLES}}", bubbles(["What app is this??", "tutorial please", "how do you make these", "which app?!", "teach me", "I NEED this"]))
 src = src.replace("{{BUBBLES2}}", bubbles(["what software??", "how long did this take?", "is this After Effects?", "drop the tutorial", "this is so clean", "how??"]))
 cover = sys.argv[1] if len(sys.argv) > 1 else ""
+wide = sys.argv[2] if len(sys.argv) > 2 else ""
+src = src.replace("{{COVERWIDE}}", wide) if wide else re.sub(r'\s*<img src="\{\{COVERWIDE\}\}"[^>]*>', "", src)
 src = src.replace("{{COVER}}", cover) if cover else re.sub(r'\s*<img class="cover-chip"[^>]*>', "", src)
 open(os.path.join(H, "landing.html"), "w", encoding="utf-8").write(src)
 print("landing.html", len(src) // 1024, "KB", "(cover url set)" if cover else "(no cover url)")
