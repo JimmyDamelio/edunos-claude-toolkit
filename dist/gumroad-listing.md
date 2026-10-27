@@ -1,7 +1,7 @@
 # Gumroad listing — Prompt to Reel
 
 **Name:** Prompt to Reel — Make Scroll-Stopping Animated Videos with Claude (No Editing Skills Needed)
-**Price:** $17 (launch code: LAUNCH → $12)
+**Price:** $9.99
 **Files:** Prompt-to-Reel-A4.pdf · Prompt-to-Reel-Letter.pdf · prompt-library.md
 **Cover:** cover.jpg (thumbnail: cover-square.jpg)
 

@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'Grotesk';src:url(../assets/SpaceGrotesk-500-normal-latin.woff2);font-weight:500}
+@font-face{font-family:'Grotesk';src:url(../assets/SpaceGrotesk-700-normal-latin.woff2);font-weight:700}
+@font-face{font-family:'Serif';src:url(../assets/InstrumentSerif-400-italic-latin.woff2);font-style:italic}
+@font-face{font-family:'Mono';src:url(../assets/JetBrainsMono-600-normal-latin.woff2);font-weight:600}
+html,body{margin:0;background:#000}
+.art{position:relative;overflow:hidden;color:#F4F1FA;font-family:Grotesk;
+  background:radial-gradient(60% 80% at 85% 10%,rgba(107,78,255,.6),transparent 70%),radial-gradient(55% 70% at 5% 100%,rgba(255,90,60,.45),transparent 70%),#141327}
+.art::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:40px 40px}
+.book{position:absolute;box-shadow:0 30px 70px rgba(0,0,0,.6),0 0 0 2px rgba(185,169,255,.25);border-radius:8px}
+.phone{position:absolute;border-radius:26px;border:9px solid #05040C;box-shadow:0 26px 60px rgba(0,0,0,.6),0 0 0 2px rgba(185,169,255,.3);object-fit:cover;background:#05040C}
+.kicker{font:700 17px Grotesk;letter-spacing:.24em;color:#F2A20C;text-transform:uppercase}
+h1{margin:0;font:700 96px/0.95 Grotesk;letter-spacing:-.02em}
+h1 em{display:block;font:italic 400 110px/1 Serif;color:#B9A9FF;letter-spacing:0}
+.tag{font:500 26px/1.35 Grotesk;color:#DDD8EE}
+.chips{display:flex;gap:12px;flex-wrap:wrap}
+.chip{font:700 18px Grotesk;padding:10px 18px;border-radius:30px;border:2px solid rgba(255,255,255,.35)}
+.chip.hot{background:#FF5A3C;border-color:#FF5A3C}
+</style></head>
+<body>
+<!-- Gumroad cover, 1280x720 -->
+<div class="art" id="cover" style="width:1280px;height:720px">
+  <div style="position:absolute;left:72px;top:92px;width:560px;display:flex;flex-direction:column;gap:22px">
+    <div class="kicker">The complete beginner's guide</div>
+    <h1>Prompt <em>to Reel</em></h1>
+    <div class="tag">Make scroll-stopping animated videos with Claude. No editing skills needed.</div>
+    <div class="chips"><span class="chip hot">56 copy-paste prompts</span><span class="chip">Step-by-step setup</span><span class="chip">Free starter kit</span></div>
+  </div>
+  <img class="phone" src="../assets/gallery/mercy-22.jpg" style="left:735px;top:150px;width:190px;height:338px;transform:rotate(-9deg)">
+  <img class="phone" src="../assets/gallery/sleep-35.jpg" style="left:1050px;top:170px;width:190px;height:338px;transform:rotate(9deg)">
+  <img class="book" src="../dist/cover.jpg" style="left:850px;top:96px;width:300px;height:424px;transform:rotate(-2deg)">
+  <div style="position:absolute;left:760px;top:600px;width:470px;text-align:center;font:500 17px Grotesk;letter-spacing:.2em;color:#CFCBE0">REELS · TRAILERS · EXPLAINERS · ADS</div>
+</div>
+<div style="height:40px"></div>
+<!-- Gumroad thumbnail, 600x600 -->
+<div class="art" id="thumb" style="width:600px;height:600px">
+  <img class="phone" src="../assets/gallery/mercy-22.jpg" style="left:40px;top:150px;width:150px;height:267px;transform:rotate(-10deg);border-width:7px;border-radius:20px">
+  <img class="phone" src="../assets/gallery/sleep-35.jpg" style="left:410px;top:150px;width:150px;height:267px;transform:rotate(10deg);border-width:7px;border-radius:20px">
+  <img class="book" src="../dist/cover.jpg" style="left:165px;top:52px;width:270px;height:382px;transform:rotate(-2deg)">
+  <div style="position:absolute;left:0;right:0;bottom:46px;text-align:center">
+    <div style="font:700 50px/1 Grotesk;letter-spacing:-.01em">Prompt <span style="font:italic 400 58px Serif;color:#B9A9FF">to Reel</span></div>
+    <div style="font:700 18px Grotesk;letter-spacing:.18em;color:#F2A20C;margin-top:12px">ANIMATED VIDEOS WITH CLAUDE</div>
+  </div>
+</div>
+</body></html>
