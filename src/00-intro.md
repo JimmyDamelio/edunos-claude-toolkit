@@ -13,6 +13,14 @@ This guide shows you exactly how to do it, step by step, from creating your firs
 </div>
 <p class="cap">Frames from reels made with the exact method in this book. No editing software, no stock footage, no designer.</p>
 
+### Why now
+
+Faceless motion reels are everywhere on Instagram and TikTok right now, and the numbers explain why. Here's a snapshot of public view counts from four faceless creator accounts in October 2026:
+
+<img src="assets/gallery/social-proof.png" style="width:78%;display:block;margin:2mm auto 4mm;border-radius:3mm">
+
+On one account, the animated reels got a median of **490K views**, while the same creator's text and photo posts got **1.4K**. Same audience, same creator: the format made the difference.
+
 ### What you'll be able to make
 
 - **Social reels** in 9:16: listicles with animated characters, cinematic quotes, "3 mistakes" videos, countdowns, myth-vs-fact.

@@ -15,7 +15,7 @@ You describe the video to Claude, and Claude writes the code that draws every fr
 
 **Prompt to Reel** is the complete beginner's guide to doing it yourself, step by step, with zero editing skills and zero installs.
 
-[SOCIAL PROOF: 2–3 screenshots of reels in this style with their views/likes, e.g. "This style of video: 1.2M views · 84K likes"]
+**Why now?** Faceless motion reels are everywhere right now. Recent animated reels from 4 faceless creator accounts hit **2.5M, 2.4M and 1.8M views**, and on one account, animated reels got a median of **490K views** versus **1.4K** for the same creator's text and photo posts. *(Public view counts, October 2026; creators anonymised; not a guarantee of results.)*
 
 ### What's inside
 
@@ -39,7 +39,7 @@ A paid Claude plan that includes Claude Code (Pro, Max or Team: see claude.com/p
 
 ### Format
 
-PDF, 54 pages, A4 and US Letter, with a clickable table of contents and links. Plus the prompt library as a text file. Instant download.
+PDF, 55 pages, A4 and US Letter, with a clickable table of contents and links. Plus the prompt library as a text file. Instant download.
 
 *Independent guide, not affiliated with or endorsed by Anthropic. "Claude" is a trademark of Anthropic.*
 

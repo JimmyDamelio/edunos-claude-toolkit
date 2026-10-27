@@ -1,0 +1,60 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'Grotesk';src:url(../assets/SpaceGrotesk-500-normal-latin.woff2);font-weight:500}
+@font-face{font-family:'Grotesk';src:url(../assets/SpaceGrotesk-700-normal-latin.woff2);font-weight:700}
+@font-face{font-family:'Serif';src:url(../assets/InstrumentSerif-400-italic-latin.woff2);font-style:italic}
+@font-face{font-family:'Mono';src:url(../assets/JetBrainsMono-600-normal-latin.woff2);font-weight:600}
+:root{--surface:#141327;--ink:#F4F1FA;--ink2:#C9C4DD;--muted:#8E89A8;--line:rgba(255,255,255,.10);--animated:#EC5A3D;--text:#8E7FD0;--amber:#F2A20C}
+html,body{margin:0;background:var(--surface)}
+.card{width:1080px;height:1350px;box-sizing:border-box;padding:84px 80px 60px;background:radial-gradient(800px 600px at 85% 0%,rgba(107,78,255,.35),transparent 70%),radial-gradient(700px 500px at 0% 100%,rgba(236,90,61,.22),transparent 70%),var(--surface);color:var(--ink);font-family:Grotesk;position:relative;overflow:hidden}
+.kicker{font:700 22px Grotesk;letter-spacing:.24em;color:var(--amber);text-transform:uppercase}
+h1{font:700 76px/1.02 Grotesk;margin:18px 0 10px;letter-spacing:-.01em}
+h1 em{font:italic 400 88px Serif;color:#B9A9FF}
+.sub{font:500 25px/1.4 Grotesk;color:var(--ink2);margin:0 0 40px}
+h2{font:700 27px Grotesk;margin:0 0 18px;color:var(--ink)}
+.bars{display:grid;grid-template-columns:300px 1fr;row-gap:12px;column-gap:18px;align-items:center;margin-bottom:46px}
+.lab{font:500 21px Grotesk;color:var(--ink2);text-align:right;white-space:nowrap}
+.lab b{color:var(--ink);font-weight:700}
+.track{position:relative;height:34px}
+.bar{height:34px;background:var(--animated);border-radius:0 4px 4px 0}
+.val{position:absolute;top:50%;transform:translateY(-50%);font:600 22px Mono;color:var(--ink);padding-left:12px}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:end;height:250px;margin:0 0 14px}
+.col{display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.cbar{border-radius:4px 4px 0 0}
+.cval{font:700 46px Grotesk;margin-bottom:10px}
+.clab{font:500 21px Grotesk;color:var(--ink2);margin-top:12px}
+.ratio{position:absolute;right:80px;top:880px;text-align:right}
+.ratio .n{font:700 96px Grotesk;color:var(--amber);line-height:1}
+.ratio .t{font:italic 400 30px Serif;color:var(--ink2)}
+.foot{position:absolute;left:80px;right:80px;bottom:46px;font:500 17px/1.45 Grotesk;color:var(--muted)}
+.axis{border-top:2px solid var(--line);margin-top:0}
+</style></head>
+<body><div class="card" id="card">
+<div class="kicker">Faceless motion reels</div>
+<h1>This style is <em>exploding.</em></h1>
+<p class="sub">Public view counts on recent animated reels from 4 faceless creator accounts.</p>
+
+<h2>Top 8 reels by views</h2>
+<div class="bars" id="bars"></div>
+
+<h2>Same account: animated reels vs text &amp; photo posts</h2>
+<div class="compare" style="width:560px">
+  <div class="col"><div class="cval">490K</div><div class="cbar" id="b1" style="background:var(--animated)"></div><div class="clab">Animated reels<br><span style="color:var(--muted)">median of 4</span></div></div>
+  <div class="col"><div class="cval">1.4K</div><div class="cbar" id="b2" style="background:var(--text)"></div><div class="clab">Text &amp; photo posts<br><span style="color:var(--muted)">median of 4</span></div></div>
+</div>
+
+<div class="ratio"><div class="n">~350×</div><div class="t">more views for<br>the animated posts</div></div>
+
+<div class="foot">Snapshot of public Instagram view counts, October 2026. Creators anonymised; small sample; not a guarantee of results. We don't claim these creators used this book's method — the point is that this <i>style</i> performs.</div>
+</div>
+<script>
+const top8 = [['Creator B', 'stick-figure story', 2.5e6], ['Creator C', 'silhouette scene', 2.4e6], ['Creator C', 'silhouette scene', 1.8e6], ['Creator D', 'animated listicle', 807e3], ['Creator D', 'animated listicle', 802e3], ['Creator B', 'stick-figure story', 398e3], ['Creator C', 'silhouette scene', 367e3], ['Creator A', 'motion cards', 281e3]];
+const fmt = v => v >= 1e6 ? (v / 1e6).toFixed(1).replace('.0', '') + 'M' : Math.round(v / 1e3) + 'K';
+const max = 2.5e6, el = document.getElementById('bars');
+top8.forEach(([c, s, v]) => {
+  el.insertAdjacentHTML('beforeend', `<div class="lab"><b>${c}</b> · ${s}</div><div class="track"><div class="bar" style="width:${v / max * 520}px"></div><div class="val" style="left:${v / max * 520}px">${fmt(v)}</div></div>`);
+});
+// linear scale for the comparison (1.4K is visibly almost nothing next to 490K: that's the point)
+const h = 170; document.getElementById('b1').style.height = h + 'px'; document.getElementById('b2').style.height = Math.max(2, h * 1389 / 490500) + 'px';
+</script></body></html>
