@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Prompt to Reel</title>
+<style>
+@font-face{font-family:'Grotesk';src:url(assets/SpaceGrotesk-500-normal-latin.woff2) format('woff2');font-weight:500}
+@font-face{font-family:'Grotesk';src:url(assets/SpaceGrotesk-700-normal-latin.woff2) format('woff2');font-weight:700}
+@font-face{font-family:'Serif';src:url(assets/InstrumentSerif-400-italic-latin.woff2) format('woff2');font-style:italic}
+@font-face{font-family:'Serif';src:url(assets/InstrumentSerif-400-normal-latin.woff2) format('woff2');font-style:normal}
+@font-face{font-family:'Mono';src:url(assets/JetBrainsMono-600-normal-latin.woff2) format('woff2');font-weight:600}
+:root{
+  --paper:#FFFFFF; --ink:#17161F; --ink2:#4A4757; --muted:#8B8796; --line:#E7E1D8; --soft:#F3EEE6;
+  --coral:#FF5A3C; --violet:#6B4EFF; --mint:#13A57F; --amber:#F2A20C; --night:#141327;
+}
+@page{size:A4;margin:20mm 19mm 22mm 19mm;
+  @bottom-center{content:counter(page);font:500 8.5pt 'Grotesk';color:#8B8796}
+  @bottom-left{content:"Prompt to Reel";font:500 7.5pt 'Grotesk';color:#B9B4C2;letter-spacing:.06em}
+}
+@page cover{margin:0; @bottom-center{content:none} @bottom-left{content:none}}
+@page partpage{margin:0; @bottom-center{content:none} @bottom-left{content:none}}
+html{background:var(--paper)}
+body{margin:0;font:400 10.4pt/1.62 'Inter',sans-serif;color:var(--ink);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+/* cover */
+.cover{page:cover;break-after:page;height:var(--page-h,297mm);width:100%;position:relative;overflow:hidden;background:var(--night);color:#fff}
+.cover svg{position:absolute;inset:0;width:100%;height:100%}
+/* parts */
+.part{page:partpage;break-before:page;break-after:page;height:var(--page-h,297mm);background:var(--night);color:#fff;display:flex;flex-direction:column;justify-content:center;padding:0 24mm;box-sizing:border-box;position:relative;overflow:hidden}
+.part::before{content:"";position:absolute;right:-60mm;top:-40mm;width:180mm;height:180mm;border-radius:50%;background:radial-gradient(circle,rgba(107,78,255,.55),rgba(107,78,255,0) 70%)}
+.part::after{content:"";position:absolute;left:-50mm;bottom:-60mm;width:160mm;height:160mm;border-radius:50%;background:radial-gradient(circle,rgba(255,90,60,.45),rgba(255,90,60,0) 70%)}
+.part-num{font:700 13pt 'Grotesk';letter-spacing:.3em;text-transform:uppercase;color:var(--amber);position:relative}
+.part-title{font:700 44pt/1.02 'Grotesk';margin:6mm 0 4mm;position:relative;max-width:150mm}
+.part-sub{font:italic 400 19pt/1.3 'Serif';color:#CFCBE0;max-width:140mm;position:relative}
+/* headings */
+h2{font:700 24pt/1.1 'Grotesk';margin:0 0 4mm;break-before:page;letter-spacing:-.01em}
+h2 em{font:italic 400 28pt 'Serif';color:var(--violet)}
+h3{font:700 13.5pt/1.25 'Grotesk';margin:7mm 0 2mm;break-after:avoid}
+h4{font:700 10.5pt 'Grotesk';margin:5mm 0 1mm;text-transform:uppercase;letter-spacing:.08em;color:var(--violet);break-after:avoid}
+.lead{font:italic 400 15pt/1.4 'Serif';color:var(--ink2);margin:0 0 6mm}
+p{margin:0 0 3mm;orphans:3;widows:3}
+a{color:var(--violet);text-decoration:none;border-bottom:1px solid rgba(107,78,255,.35)}
+strong{font-weight:700}
+ul,ol{margin:0 0 3mm;padding-left:6mm}
+li{margin:0 0 1.2mm}
+code{font:600 8.8pt 'Mono';background:var(--soft);padding:.3mm 1.2mm;border-radius:1.2mm;color:#3B2DB3}
+pre{font:600 8.4pt/1.5 'Mono';background:var(--night);color:#E9E6F5;padding:4mm 5mm;border-radius:3mm;white-space:pre-wrap;break-inside:avoid;margin:0 0 4mm}
+pre code{background:none;color:inherit;padding:0}
+hr{border:0;border-top:1px solid var(--line);margin:6mm 0}
+/* tables */
+table{width:100%;border-collapse:collapse;margin:2mm 0 5mm;font-size:9.2pt;break-inside:avoid}
+th{font:700 8.3pt 'Grotesk';text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;border-bottom:1.5px solid var(--ink);padding:1.8mm 2mm}
+td{border-bottom:1px solid var(--line);padding:2mm;vertical-align:top}
+/* ordered steps */
+ol.steps,.steps ol{list-style:none;counter-reset:s;padding:0}
+/* callouts */
+.callout{border-radius:3mm;padding:3.5mm 5mm 1.5mm;margin:2mm 0 5mm;break-inside:avoid;border-left:4px solid}
+.callout-label{font:700 8pt 'Grotesk';text-transform:uppercase;letter-spacing:.14em;margin-bottom:1mm}
+.callout.tip{background:#EAF7F1;border-color:var(--mint)} .callout.tip .callout-label{color:var(--mint)}
+.callout.warn{background:#FFF0EB;border-color:var(--coral)} .callout.warn .callout-label{color:var(--coral)}
+.callout.note{background:#F0EDFF;border-color:var(--violet)} .callout.note .callout-label{color:var(--violet)}
+/* prompt cards */
+.prompt{background:var(--night);color:#ECE9F7;border-radius:3.5mm;margin:3mm 0 5mm;break-inside:avoid;overflow:hidden}
+.prompt-head{display:flex;gap:3mm;align-items:baseline;padding:3mm 5mm 2.4mm;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.prompt-label{font:600 7.4pt 'Mono';letter-spacing:.14em;color:var(--amber)}
+.prompt-title{font:700 10.5pt 'Grotesk';color:#fff}
+.prompt-body{font:600 8.5pt/1.58 'Mono';white-space:pre-wrap;padding:3.5mm 5mm 4mm}
+/* figures */
+.fig{margin:3mm 0 6mm;break-inside:avoid}
+.fig svg{width:100%;height:auto;display:block;border-radius:3mm}
+.fig figcaption{font:italic 400 11pt 'Serif';color:var(--muted);margin-top:2mm;text-align:center}
+.gallery{display:grid;gap:3mm;margin:2mm 0 5mm;break-inside:avoid}
+.gallery img{width:100%;border-radius:2.5mm;display:block}
+.g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)} .g2{grid-template-columns:repeat(2,1fr)}
+.cap{font:italic 400 11pt 'Serif';color:var(--muted);text-align:center;margin:-2mm 0 5mm}
+/* toc */
+.toc{break-after:page}
+.toc h2{break-before:avoid}
+.toc ol{list-style:none;padding:0;margin:0}
+.toc li a{display:flex;justify-content:space-between;color:var(--ink);border:0;padding:1.3mm 0;border-bottom:1px dotted var(--line)}
+.toc .pn{font:600 9pt 'Mono';color:var(--muted)}
+.toc-part a{font:700 9pt 'Grotesk';letter-spacing:.12em;color:var(--violet)!important;margin-top:4mm;border-bottom:1.5px solid var(--ink)!important}
+.toc-ch a{font:500 10.5pt 'Grotesk'}
+/* misc */
+.pill{display:inline-block;font:700 7.5pt 'Grotesk';letter-spacing:.1em;text-transform:uppercase;background:var(--soft);border-radius:10mm;padding:.6mm 2.4mm;color:var(--ink2)}
+.kicker{font:700 8.5pt 'Grotesk';letter-spacing:.2em;text-transform:uppercase;color:var(--coral);margin-bottom:2mm}
+.bigquote{font:italic 400 20pt/1.3 'Serif';color:var(--ink);border-left:3px solid var(--coral);padding-left:5mm;margin:4mm 0 6mm}
+.checklist li{list-style:none;position:relative;padding-left:7mm}
+.checklist li::before{content:"";position:absolute;left:0;top:1.2mm;width:3.6mm;height:3.6mm;border:1.5px solid var(--violet);border-radius:1mm}
+.legal{font-size:8.6pt;color:var(--muted)}
+</style></head>
+<body>
+<section class="cover"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1414" preserveAspectRatio="xMidYMid slice">
+<defs>
+<radialGradient id="o1" cx="80%" cy="12%" r="55%"><stop offset="0" stop-color="#6B4EFF" stop-opacity=".75"/><stop offset="1" stop-color="#6B4EFF" stop-opacity="0"/></radialGradient>
+<radialGradient id="o2" cx="10%" cy="78%" r="50%"><stop offset="0" stop-color="#FF5A3C" stop-opacity=".55"/><stop offset="1" stop-color="#FF5A3C" stop-opacity="0"/></radialGradient>
+<linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset=".55" stop-color="#141327" stop-opacity="0"/><stop offset="1" stop-color="#141327" stop-opacity=".95"/></linearGradient>
+<pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="#fff" stroke-opacity=".04"/></pattern>
+</defs>
+<rect width="1000" height="1414" fill="#141327"/><rect width="1000" height="1414" fill="url(#grid)"/>
+<rect width="1000" height="1414" fill="url(#o1)"/><rect width="1000" height="1414" fill="url(#o2)"/>
+<text x="80" y="150" font-family="Grotesk" font-weight="700" font-size="22" letter-spacing="7" fill="#F2A20C">THE COMPLETE BEGINNER'S GUIDE</text>
+<text x="76" y="290" font-family="Grotesk" font-weight="700" font-size="138" fill="#fff" letter-spacing="-3">Prompt</text>
+<text x="80" y="420" font-family="Serif" font-style="italic" font-size="150" fill="#B9A9FF">to Reel</text>
+<text x="82" y="500" font-family="Grotesk" font-weight="500" font-size="31" fill="#E9E6F5">Make scroll-stopping animated videos</text>
+<text x="82" y="542" font-family="Grotesk" font-weight="500" font-size="31" fill="#E9E6F5">with Claude, no editing skills needed.</text>
+<g font-family="Grotesk" font-weight="700" font-size="20">
+<rect x="80" y="600" width="270" height="52" rx="26" fill="#FF5A3C"/><text x="215" y="633" text-anchor="middle" fill="#fff">56 copy-paste prompts</text>
+<rect x="365" y="600" width="230" height="52" rx="26" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/><text x="480" y="633" text-anchor="middle" fill="#fff">Step-by-step setup</text>
+<rect x="610" y="600" width="210" height="52" rx="26" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/><text x="715" y="633" text-anchor="middle" fill="#fff">Free starter kit</text>
+</g>
+<g transform="translate(80 690)"><rect width="560" height="64" rx="16" fill="#fff" fill-opacity=".08" stroke="#fff" stroke-opacity=".15"/>
+<text x="24" y="41" font-family="Mono" font-weight="600" font-size="19" fill="#E9E6F5">› Make a 30 s 9:16 reel about…</text>
+<rect x="470" y="14" width="70" height="36" rx="10" fill="#6B4EFF"/><text x="505" y="39" text-anchor="middle" font-family="Grotesk" font-weight="700" font-size="18" fill="#fff">Go</text></g>
+<g transform="rotate(-8 245.0 1052.0)"><rect x="110" y="820" width="270" height="464" rx="34" fill="#0B0A18" stroke="#3A3660" stroke-width="2"/><clipPath id="c120"><rect x="120" y="830" width="250" height="444" rx="26"/></clipPath><image href="assets/gallery/mercy-22.jpg" x="120" y="830" width="250" height="444" preserveAspectRatio="xMidYMid slice" clip-path="url(#c120)"/></g><g transform="rotate(0 505.0 982.0)"><rect x="370" y="750" width="270" height="464" rx="34" fill="#0B0A18" stroke="#3A3660" stroke-width="2"/><clipPath id="c380"><rect x="380" y="760" width="250" height="444" rx="26"/></clipPath><image href="assets/gallery/sleep-2.4.jpg" x="380" y="760" width="250" height="444" preserveAspectRatio="xMidYMid slice" clip-path="url(#c380)"/></g><g transform="rotate(8 765.0 1052.0)"><rect x="630" y="820" width="270" height="464" rx="34" fill="#0B0A18" stroke="#3A3660" stroke-width="2"/><clipPath id="c640"><rect x="640" y="830" width="250" height="444" rx="26"/></clipPath><image href="assets/gallery/sleep-35.jpg" x="640" y="830" width="250" height="444" preserveAspectRatio="xMidYMid slice" clip-path="url(#c640)"/></g>
+<rect width="1000" height="1414" fill="url(#fade)"/>
+<text x="500" y="1360" text-anchor="middle" font-family="Grotesk" font-weight="500" font-size="20" letter-spacing="4" fill="#CFCBE0">REELS · TRAILERS · EXPLAINERS · ANIMATED ADS</text>
+</svg></section>
+<section class="toc"><div class="kicker">Inside</div><h2>Contents</h2><ol><li class="toc-ch"><a href="#welcome-to-your-video-studio" data-find="Welcome to your video studio"><span>Welcome to your video studio</span><span class="pn"></span></a></li><li class="toc-part"><a href="#part-1" data-find="Understand the magic"><span>PART 1 · Understand the magic</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#how-claude-makes-a-video" data-find="How Claude makes a video"><span>How Claude makes a video</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#what-you-need" data-find="What you need"><span>What you need</span><span class="pn"></span></a></li><li class="toc-part"><a href="#part-2" data-find="Set up your studio"><span>PART 2 · Set up your studio</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#step-1-create-your-github-account" data-find="Step 1 · Create your GitHub account"><span>Step 1 · Create your GitHub account</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#step-2-create-your-studio-repository" data-find="Step 2 · Create your studio repository"><span>Step 2 · Create your studio repository</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#step-3-connect-claude-code-to-github" data-find="Step 3 · Connect Claude Code to GitHub"><span>Step 3 · Connect Claude Code to GitHub</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#step-4-tune-your-environment" data-find="Step 4 · Tune your environment"><span>Step 4 · Tune your environment</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#step-5-your-first-session-check-everything" data-find="Step 5 · Your first session: check everything"><span>Step 5 · Your first session: check everything</span><span class="pn"></span></a></li><li class="toc-part"><a href="#part-3" data-find="Your first video"><span>PART 3 · Your first video</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#the-anatomy-of-a-great-video-prompt" data-find="The anatomy of a great video prompt"><span>The anatomy of a great video prompt</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#your-first-video-in-15-minutes" data-find="Your first video in 15 minutes"><span>Your first video in 15 minutes</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#direct-like-a-pro" data-find="Direct like a pro"><span>Direct like a pro</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#three-real-videos-dissected" data-find="Three real videos, dissected"><span>Three real videos, dissected</span><span class="pn"></span></a></li><li class="toc-part"><a href="#part-4" data-find="Sound that sells"><span>PART 4 · Sound that sells</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#voice-over-with-free-voices" data-find="Voice-over with free voices"><span>Voice-over with free voices</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#real-sound-effects-and-no-music-videos" data-find="Real sound effects (and no-music videos)"><span>Real sound effects (and no-music videos)</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#let-claude-listen" data-find="Let Claude listen"><span>Let Claude listen</span><span class="pn"></span></a></li><li class="toc-part"><a href="#part-5" data-find="The prompt library"><span>PART 5 · The prompt library</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#how-to-use-the-library" data-find="How to use the library"><span>How to use the library</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#social-reels-that-stop-the-scroll" data-find="Social reels that stop the scroll"><span>Social reels that stop the scroll</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#business-trailers-ads-and-launches" data-find="Business: trailers, ads and launches"><span>Business: trailers, ads and launches</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#art-styles" data-find="Art styles"><span>Art styles</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#teach-and-explain" data-find="Teach and explain"><span>Teach and explain</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#faith-and-reminders-with-verified-sources" data-find="Faith and reminders (with verified sources)"><span>Faith and reminders (with verified sources)</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#music-and-audio" data-find="Music and audio"><span>Music and audio</span><span class="pn"></span></a></li><li class="toc-part"><a href="#part-6" data-find="Publish, grow, fix"><span>PART 6 · Publish, grow, fix</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#the-posting-playbook" data-find="The posting playbook"><span>The posting playbook</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#troubleshooting" data-find="Troubleshooting"><span>Troubleshooting</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#the-one-page-checklist" data-find="The one-page checklist"><span>The one-page checklist</span><span class="pn"></span></a></li><li class="toc-ch"><a href="#credits-licences-and-thank-yous" data-find="Credits, licences and thank yous"><span>Credits, licences and thank yous</span><span class="pn"></span></a></li></ol></section>
+<h2 id="welcome-to-your-video-studio">Welcome to your <em>video studio</em></h2>
+<p class="lead">You're about to turn an AI assistant into a motion designer, an animator and a sound editor, and you won't open a single editing app.</p>
+
+<p>You've seen them on your feed: buttery-smooth animated reels, cinematic quote videos, little faceless characters acting out tips, watercolour trailers, explainers with charts that draw themselves. People keep asking in the comments <em>"What app did you use?"</em></p>
+<p>Most of those videos weren't edited at all. They were <strong>written</strong>. Someone described the video to Claude, and Claude wrote the code that draws every single frame, composed the sound, checked its own work and delivered a finished MP4.</p>
+<p>This guide shows you exactly how to do it, step by step, from creating your first GitHub account to publishing your first reel. No coding knowledge needed. If you can copy, paste and describe what you want, you can do this.</p>
+<div class="gallery g4">
+<img src="assets/gallery/sleep-2.4.jpg"><img src="assets/gallery/mercy-22.jpg"><img src="assets/gallery/sleep-27.5.jpg"><img src="assets/gallery/mercy-37.2.jpg">
+</div>
+<p class="cap">Frames from reels made with the exact method in this book. No editing software, no stock footage, no designer.</p>
+
+<h3>What you'll be able to make</h3>
+<ul>
+<li><strong>Social reels</strong> in 9:16: listicles with animated characters, cinematic quotes, "3 mistakes" videos, countdowns, myth-vs-fact.</li>
+<li><strong>Trailers and ads</strong> for your product, ebook, app, event or shop.</li>
+<li><strong>Explainers</strong>: how something works, animated charts, maps, timelines.</li>
+<li><strong>Art-style shorts</strong>: watercolour, paper-cut, pixel art, neon, low-poly 3D, ink and dozens more.</li>
+<li><strong>Lyric videos and audiograms</strong> synced to your audio.</li>
+</ul>
+<p>With music or without, with a natural-sounding voice-over or none, with real sound effects placed on the exact frame.</p>
+<h3>What this book is <em>not</em></h3>
+<p>It's not about realistic AI footage of people. Claude draws with code, so it shines at <strong>motion design, illustration, typography and animation</strong>: the styles that dominate reels and ads today. If you need a realistic human on camera, you still need a camera (or a different kind of AI tool).</p>
+<h3>How to use this book</h3>
+<ol>
+<li><strong>Part 1</strong> explains what's really happening, in plain English. Read it once: it will make everything else make sense.</li>
+<li><strong>Part 2</strong> is the one-time setup. Follow it in order, with this PDF open next to your browser. Allow about 30 minutes.</li>
+<li><strong>Part 3</strong> walks you through your first video and how to direct Claude like a pro.</li>
+<li><strong>Part 4</strong> covers voice-over and sound.</li>
+<li><strong>Part 5</strong> is the prompt library: 44 ready-to-copy prompts with variations. Come back to it every time you need an idea.</li>
+<li><strong>Part 6</strong> covers publishing, growing, and fixing anything that goes wrong.</li>
+</ol>
+<div class="callout tip"><div class="callout-label">Tip</div><p>Every prompt in this book is also included as a plain-text file (<strong>prompt-library.md</strong>) with your download, so you can copy them without fighting PDF line breaks.</p></div>
+
+<div class="callout note"><div class="callout-label">Good to know</div><p>Screens change. The menus described here match Claude Code on the web at the time of writing. If a button has moved or been renamed, look for the closest match, or simply ask Claude in the chat: <em>"Where do I find the setting for X?"</em> It can read its own documentation.</p></div>
+
+
+<section class="part" id="part-1"><div class="part-num">Part 1</div><h1 class="part-title">Understand the magic</h1><p class="part-sub">Five minutes of theory that will save you hours of trial and error.</p></section>
+<h2 id="how-claude-makes-a-video">How Claude makes a <em>video</em></h2>
+<p class="lead">Claude doesn't "generate" a video the way image AIs do. It builds one, frame by frame, like a tiny animation studio.</p>
+
+<p>When you ask Claude Code for a video, it works like a team of specialists who never get tired:</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 420" role="img"><rect width="1600" height="420" rx="22" fill="#F6F2EC"/><rect x="40" y="70" width="270" height="250" rx="22" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><circle cx="175" cy="150" r="50" fill="#6B4EFF" opacity=".14"/><circle cx="175" cy="150" r="30" fill="#6B4EFF"/><text x="175" y="159" font-size="26" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >1</text><text x="175" y="245" font-size="28" fill="#17161F" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Storyboard</text><text x="175" y="280" font-size="18" fill="#4A4757" font-weight="500" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >scenes, timings, text</text><path d="M320 195 l22 0 m-9 -9 l9 9 l-9 9" stroke="#8B8796" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="350" y="70" width="270" height="250" rx="22" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><circle cx="485" cy="150" r="50" fill="#FF5A3C" opacity=".14"/><circle cx="485" cy="150" r="30" fill="#FF5A3C"/><text x="485" y="159" font-size="26" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >2</text><text x="485" y="245" font-size="28" fill="#17161F" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Animate</text><text x="485" y="280" font-size="18" fill="#4A4757" font-weight="500" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >code draws any frame</text><path d="M630 195 l22 0 m-9 -9 l9 9 l-9 9" stroke="#8B8796" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="660" y="70" width="270" height="250" rx="22" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><circle cx="795" cy="150" r="50" fill="#F2A20C" opacity=".14"/><circle cx="795" cy="150" r="30" fill="#F2A20C"/><text x="795" y="159" font-size="26" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >3</text><text x="795" y="245" font-size="28" fill="#17161F" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Capture</text><text x="795" y="280" font-size="18" fill="#4A4757" font-weight="500" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >30 frames / second</text><path d="M940 195 l22 0 m-9 -9 l9 9 l-9 9" stroke="#8B8796" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="970" y="70" width="270" height="250" rx="22" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><circle cx="1105" cy="150" r="50" fill="#13A57F" opacity=".14"/><circle cx="1105" cy="150" r="30" fill="#13A57F"/><text x="1105" y="159" font-size="26" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >4</text><text x="1105" y="245" font-size="28" fill="#17161F" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Sound</text><text x="1105" y="280" font-size="18" fill="#4A4757" font-weight="500" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >voice, effects, ambience</text><path d="M1250 195 l22 0 m-9 -9 l9 9 l-9 9" stroke="#8B8796" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="1280" y="70" width="270" height="250" rx="22" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><circle cx="1415" cy="150" r="50" fill="#17161F" opacity=".14"/><circle cx="1415" cy="150" r="30" fill="#17161F"/><text x="1415" y="159" font-size="26" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >5</text><text x="1415" y="245" font-size="28" fill="#17161F" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Assemble</text><text x="1415" y="280" font-size="18" fill="#4A4757" font-weight="500" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >ffmpeg → MP4</text><text x="800" y="380" font-size="18" fill="#8B8796" font-weight="500" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" font-style="italic">Claude checks its own work between every stage: stills, contact sheets and even the audio.</text></svg><figcaption>The five stages Claude goes through for every video you request.</figcaption></figure>
+<ol>
+<li><strong>The director</strong> turns your request into a <strong>storyboard</strong>: scenes, timings, on-screen text, sound cues.</li>
+<li><strong>The animator</strong> writes a web page that can draw <em>any moment</em> of the film. Ask it for second 12.4 and it draws exactly that frame. This is what makes the result smooth and precise.</li>
+<li><strong>The camera</strong> is a hidden web browser that visits that page and takes a picture of every frame: 30 per second, so a 60-second reel is 1,800 pictures.</li>
+<li><strong>The sound team</strong> builds the audio: a voice-over from a text-to-speech model, real recorded sound effects, a synthesised score, or silence and ambience.</li>
+<li><strong>The editor</strong> (a free tool called ffmpeg) stitches the pictures and the sound into one MP4 file.</li>
+</ol>
+<p>Along the way, Claude <strong>looks at its own work</strong>. It renders a few key frames, inspects them like a picture, notices that a title overlaps an image or that text is hard to read, fixes it and checks again. With the right tools it can even <em>listen</em> to the soundtrack and critique it.</p>
+<h3>Why this beats editing apps</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Editing app</th>
+<th>Claude + code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Learning curve</td>
+<td>Weeks</td>
+<td>Minutes, you describe it</td>
+</tr>
+<tr>
+<td>Changing a colour everywhere</td>
+<td>Re-edit every clip</td>
+<td>One sentence</td>
+</tr>
+<tr>
+<td>Making 10 versions</td>
+<td>10× the work</td>
+<td>"Now make it 9:16, 1:1 and 16:9"</td>
+</tr>
+<tr>
+<td>Consistency across a series</td>
+<td>Hard</td>
+<td>Perfect: same code, new text</td>
+</tr>
+<tr>
+<td>Cost per video</td>
+<td>Your time</td>
+<td>A slice of your Claude plan</td>
+</tr>
+</tbody>
+</table>
+<h3>What it's great at, and what it isn't</h3>
+<p><strong>Great:</strong> motion graphics, kinetic typography, illustrated characters (faceless "pill people", mascots, icons), explainers, charts, maps, product mock-ups, 2D and stylised 3D, art styles, lyric videos, subtitles, sound design.</p>
+<p><strong>Not great:</strong> photorealistic people and real-world footage. If you need those, film them or use a dedicated video-generation tool, and you can still ask Claude to edit, caption and brand them.</p>
+<div class="callout tip"><div class="callout-label">Tip</div><p>Think "animated", not "filmed". The most viral faceless accounts use exactly the styles Claude is best at.</p></div>
+<h2 id="what-you-need">What you <em>need</em></h2>
+<p class="lead">Three accounts, one browser, zero installs.</p>
+
+<h3>1. A Claude plan that includes Claude Code in the cloud</h3>
+<p>You'll use <strong>Claude Code on the web</strong> at <a href="https://claude.ai/code">claude.ai/code</a>. Cloud sessions are available on the paid <strong>Pro</strong>, <strong>Max</strong> and <strong>Team</strong> plans (and some Enterprise seats). Check current prices and what each plan includes at <a href="https://claude.com/pricing">claude.com/pricing</a>.</p>
+<ul>
+<li><strong>Pro</strong> is enough to start and learn.</li>
+<li><strong>Max</strong> gives much more room if you plan to produce several videos a day: video work is long, detailed work.</li>
+</ul>
+<p>Everything runs on Anthropic's computers in the cloud, so your laptop's speed doesn't matter. An old PC works perfectly; it only needs a browser.</p>
+<h3>2. A free GitHub account</h3>
+<p>GitHub is where your projects live. Think of it as a <strong>Google Drive for projects</strong>. Claude's cloud sessions are wiped when they end, so anything worth keeping (your videos, your templates, your settings) gets saved to GitHub. Part 2 shows you how to create an account in five minutes.</p>
+<h3>3. The starter kit (free, included)</h3>
+<p>This book comes with a ready-made <strong>starter kit</strong>: a collection of skills (instruction packs for Claude), video templates and an installer, all assembled from excellent open-source projects. You'll install it in one line.</p>
+<h3>Optional</h3>
+<ul>
+<li>An <strong>Instagram, TikTok or YouTube</strong> account to publish to.</li>
+<li>An <strong>ElevenLabs</strong> account if you ever want premium voices (the free voices in this book are already good).</li>
+</ul>
+<div class="callout note"><div class="callout-label">Good to know</div><p><strong>What's a "skill"?</strong> A skill is a folder of instructions and tools that teaches Claude a specialised job, like "how to place sound effects on a video" or "the rules of good motion design". Claude loads the right skill automatically when your request needs it.</p></div>
+<h3>The words you'll see (mini glossary)</h3>
+<table>
+<thead>
+<tr>
+<th>Word</th>
+<th>What it means for you</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Repository (repo)</strong></td>
+<td>A project folder on GitHub. Your "studio" will be one repo.</td>
+</tr>
+<tr>
+<td><strong>Session</strong></td>
+<td>One conversation with Claude Code, running on its own cloud computer.</td>
+</tr>
+<tr>
+<td><strong>Environment</strong></td>
+<td>The saved settings for those cloud computers: internet access and a startup script.</td>
+</tr>
+<tr>
+<td><strong>Setup script</strong></td>
+<td>A few lines that run when a session starts, used here to install the starter kit.</td>
+</tr>
+<tr>
+<td><strong>Render</strong></td>
+<td>The moment Claude draws every frame and builds the MP4.</td>
+</tr>
+<tr>
+<td><strong>Push</strong></td>
+<td>Claude saving files to your GitHub repo.</td>
+</tr>
+<tr>
+<td><strong>Context</strong></td>
+<td>Claude's working memory for one conversation. It fills up over long sessions.</td>
+</tr>
+</tbody>
+</table>
+
+<section class="part" id="part-2"><div class="part-num">Part 2</div><h1 class="part-title">Set up your studio</h1><p class="part-sub">A one-time, 30-minute setup. Keep this PDF open next to your browser and follow along.</p></section>
+<h2 id="step-1-create-your-github-account">Step 1 · Create your <em>GitHub</em> account</h2>
+<p class="lead">Skip this chapter if you already have one.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 760" role="img"><rect width="1600" height="760" rx="22" fill="#F6F2EC"/><rect x="40" y="30" width="1520" height="700" rx="16" fill="#FFFFFF" stroke="#E2DCD2" stroke-width="2"/><path d="M40 46 a16 16 0 0 1 16 -16 h1488 a16 16 0 0 1 16 16 v40 h-1520 z" fill="#EFEAE2"/><circle cx="68" cy="58" r="7" fill="#FF6159"/><circle cx="90" cy="58" r="7" fill="#FFBD2E"/><circle cx="112" cy="58" r="7" fill="#28C941"/><rect x="150" y="43" width="1380" height="30" rx="15" fill="#FFFFFF" stroke="#E2DCD2"/><text x="170" y="64" font-size="17" fill="#4A4757" font-weight="500" text-anchor="start" font-family="Mono, monospace" >github.com/signup</text><rect x="40" y="86" width="1520" height="644" fill="#0D1117"/><text x="800" y="170" font-size="38" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Welcome to GitHub!</text><text x="800" y="210" font-size="20" fill="#8B949E" font-weight="500" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Let's begin the adventure</text><text x="560" y="268" font-size="18" fill="#C9D1D9" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Email</text><rect x="560" y="280" width="480" height="50" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="2"/><text x="578" y="313" font-size="19" fill="#C9D1D9" font-weight="500" text-anchor="start" font-family="Mono, monospace" >you@example.com</text><circle cx="530" cy="305" r="19" fill="#FF5A3C"/><text x="530" y="312" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >1</text><text x="560" y="378" font-size="18" fill="#C9D1D9" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Password</text><rect x="560" y="390" width="480" height="50" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="2"/><text x="578" y="423" font-size="19" fill="#C9D1D9" font-weight="500" text-anchor="start" font-family="Mono, monospace" >••••••••••••</text><circle cx="530" cy="415" r="19" fill="#FF5A3C"/><text x="530" y="422" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >2</text><text x="560" y="488" font-size="18" fill="#C9D1D9" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Username</text><rect x="560" y="500" width="480" height="50" rx="8" fill="#0D1117" stroke="#30363D" stroke-width="2"/><text x="578" y="533" font-size="19" fill="#C9D1D9" font-weight="500" text-anchor="start" font-family="Mono, monospace" >yourbrand</text><circle cx="530" cy="525" r="19" fill="#FF5A3C"/><text x="530" y="532" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >2</text><rect x="560" y="615" width="480" height="48" rx="10" fill="#1F883D"/><text x="800.0" y="646.0" font-size="19" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Create account / Continue</text><circle cx="530" cy="639" r="19" fill="#FF5A3C"/><text x="530" y="646" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >3</text><text x="800" y="715" font-size="15" fill="#8B949E" font-weight="500" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" font-style="italic">Then solve the puzzle and enter the code GitHub emails you.</text></svg><figcaption>Simplified illustration of GitHub&#x27;s sign-up page.</figcaption></figure>
+<ol>
+<li>Go to <strong><a href="https://github.com/signup">github.com/signup</a></strong>.</li>
+<li>Enter your <strong>email</strong>, choose a <strong>password</strong> and pick a <strong>username</strong>.</li>
+<li>Solve the quick puzzle that proves you're human, then type the <strong>code GitHub emails you</strong>.</li>
+<li>If GitHub asks a few questions about how you'll use it, answer anything, or skip. Choose the <strong>Free</strong> plan: it's all you need.</li>
+</ol>
+<div class="callout tip"><div class="callout-label">Tip</div><p>Your username appears in your project links (github.com/<strong>yourname</strong>/...). If you create content, pick something close to your brand name.</p></div>
+
+<div class="callout note"><div class="callout-label">Good to know</div><p>Add <strong>two-factor authentication</strong> (Settings → Password and authentication) once you're set up. It takes two minutes and protects everything you build.</p></div>
+<h2 id="step-2-create-your-studio-repository">Step 2 · Create your <em>studio</em> repository</h2>
+<p class="lead">One project folder where all your videos, templates and brand settings will live.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 880" role="img"><rect width="1600" height="880" rx="22" fill="#F6F2EC"/><rect x="40" y="30" width="1520" height="820" rx="16" fill="#FFFFFF" stroke="#E2DCD2" stroke-width="2"/><path d="M40 46 a16 16 0 0 1 16 -16 h1488 a16 16 0 0 1 16 16 v40 h-1520 z" fill="#EFEAE2"/><circle cx="68" cy="58" r="7" fill="#FF6159"/><circle cx="90" cy="58" r="7" fill="#FFBD2E"/><circle cx="112" cy="58" r="7" fill="#28C941"/><rect x="150" y="43" width="1380" height="30" rx="15" fill="#FFFFFF" stroke="#E2DCD2"/><text x="170" y="64" font-size="17" fill="#4A4757" font-weight="500" text-anchor="start" font-family="Mono, monospace" >github.com/new</text><text x="140" y="150" font-size="34" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Create a new repository</text><line x1="140" y1="180" x2="1460" y2="180" stroke="#E2DCD2" stroke-width="2"/><text x="140" y="225" font-size="17" fill="#4A4757" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Owner</text><rect x="140" y="235" width="300" height="46" rx="8" fill="#fff" stroke="#CFC8BC" stroke-width="2"/><text x="154" y="265.0" font-size="18" fill="#17161F" font-weight="500" text-anchor="start" font-family="Mono, monospace" >yourbrand</text><text x="455" y="268" font-size="30" fill="#8B8796" font-weight="500" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >/</text><text x="480" y="225" font-size="17" fill="#4A4757" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Repository name *</text><rect x="480" y="235" width="520" height="46" rx="8" fill="#fff" stroke="#6B4EFF" stroke-width="3"/><text x="494" y="265.0" font-size="18" fill="#17161F" font-weight="500" text-anchor="start" font-family="Mono, monospace" >my-video-studio</text><circle cx="1035" cy="258" r="19" fill="#FF5A3C"/><text x="1035" y="265" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >2</text><text x="140" y="345" font-size="17" fill="#4A4757" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Description (optional)</text><rect x="140" y="355" width="860" height="46" rx="8" fill="#fff" stroke="#CFC8BC" stroke-width="2"/><circle cx="160" cy="460" r="12" fill="#fff" stroke="#9C968C" stroke-width="3"/><text x="186" y="458" font-size="21" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Public</text><text x="186" y="484" font-size="16" fill="#8B8796" font-weight="500" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Anyone on the internet can see this repository</text><circle cx="160" cy="530" r="12" fill="#fff" stroke="#6B4EFF" stroke-width="3"/><circle cx="160" cy="530" r="6" fill="#6B4EFF"/><text x="186" y="528" font-size="21" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Private</text><text x="186" y="554" font-size="16" fill="#8B8796" font-weight="500" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >You choose who can see and commit to this repository</text><circle cx="1035" cy="530" r="19" fill="#FF5A3C"/><text x="1035" y="537" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >3</text><rect x="148" y="640" width="24" height="24" rx="5" fill="#6B4EFF"/><path d="M153 652 l6 6 l10 -12" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round"/><text x="186" y="660" font-size="21" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Add a README file</text><text x="186" y="686" font-size="16" fill="#8B8796" font-weight="500" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >This is where you can write a long description for your project.</text><circle cx="1035" cy="655" r="19" fill="#FF5A3C"/><text x="1035" y="662" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >4</text><rect x="140" y="740" width="260" height="48" rx="10" fill="#1F883D"/><text x="270.0" y="771.0" font-size="19" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Create repository</text><circle cx="430" cy="764" r="19" fill="#FF5A3C"/><text x="430" y="771" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >5</text></svg><figcaption>Simplified illustration of the &quot;Create a new repository&quot; form.</figcaption></figure>
+<ol>
+<li>Go to <strong><a href="https://github.com/new">github.com/new</a></strong>.</li>
+<li><strong>Repository name:</strong> <code>my-video-studio</code> (or any name you like).</li>
+<li>Choose <strong>Private</strong>: only you will see it.</li>
+<li>Tick <strong>Add a README file</strong>. Claude Code works with existing repositories, and the README makes sure yours isn't empty.</li>
+<li>Click <strong>Create repository</strong>. Done.</li>
+</ol>
+<div class="callout tip"><div class="callout-label">Tip</div><p>Later, you can make one repo per brand or per account, for example <code>faith-reels</code> and <code>shop-ads</code>, each with its own style settings. Start with one.</p></div>
+<h2 id="step-3-connect-claude-code-to-github">Step 3 · Connect <em>Claude Code</em> to GitHub</h2>
+<p class="lead">This is where most beginners get stuck. Go slowly; you only do it once.</p>
+
+<ol>
+<li>Go to <strong><a href="https://claude.ai/code">claude.ai/code</a></strong> and sign in with your Claude account.</li>
+<li>Claude Code asks you to <strong>connect GitHub</strong>. Follow the prompt: it opens GitHub's authorization page. Click <strong>Authorize</strong>, and GitHub sends you back to Claude Code.</li>
+<li>Install the <strong>Claude GitHub App</strong> so Claude can work in your <em>private</em> studio repo. If onboarding offers it, accept. If not, open <strong><a href="https://github.com/apps/claude/installations/new">github.com/apps/claude/installations/new</a></strong>.</li>
+<li>On the installation page, choose your account, then <strong>Only select repositories</strong>, pick <code>my-video-studio</code>, and click <strong>Install</strong>.</li>
+<li>Back on claude.ai/code: on Pro and Max plans, Claude Code creates an environment called <strong>Default</strong> for you automatically. (On Team plans, a short form appears: keep the defaults and click <strong>Create &amp; finish</strong>.)</li>
+</ol>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 580" role="img"><rect width="1600" height="580" rx="22" fill="#F6F2EC"/><rect x="40" y="60" width="480" height="420" rx="22" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><rect x="40" y="60" width="480" height="70" rx="22" fill="#141327"/><rect x="40" y="100" width="480" height="30" fill="#141327"/><text x="70" y="105" font-size="21" fill="#fff" font-weight="700" text-anchor="start" font-family="Mono, monospace" >claude.ai/code</text><text x="70" y="185" font-size="19" fill="#4A4757" font-weight="500" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Sign in, then follow the prompt to connect GitHub</text><rect x="70" y="395" width="420" height="48" rx="10" fill="#6B4EFF"/><text x="280.0" y="426.0" font-size="19" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Connect GitHub</text><circle cx="500" cy="60" r="19" fill="#FF5A3C"/><text x="500" y="67" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >1</text><path d="M530 270 l50 0 m-12 -12 l12 12 l-12 12" stroke="#8B8796" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="560" y="60" width="480" height="420" rx="22" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><rect x="560" y="60" width="480" height="70" rx="22" fill="#24292F"/><rect x="560" y="100" width="480" height="30" fill="#24292F"/><text x="590" y="105" font-size="21" fill="#fff" font-weight="700" text-anchor="start" font-family="Mono, monospace" >github.com · Authorize</text><text x="590" y="185" font-size="19" fill="#4A4757" font-weight="500" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Approve access for Claude</text><rect x="590" y="395" width="420" height="48" rx="10" fill="#1F883D"/><text x="800.0" y="426.0" font-size="19" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Authorize</text><circle cx="1020" cy="60" r="19" fill="#FF5A3C"/><text x="1020" y="67" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >2</text><path d="M1050 270 l50 0 m-12 -12 l12 12 l-12 12" stroke="#8B8796" stroke-width="3.5" fill="none" stroke-linecap="round"/><rect x="1080" y="60" width="480" height="420" rx="22" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><rect x="1080" y="60" width="480" height="70" rx="22" fill="#24292F"/><rect x="1080" y="100" width="480" height="30" fill="#24292F"/><text x="1110" y="105" font-size="21" fill="#fff" font-weight="700" text-anchor="start" font-family="Mono, monospace" >Claude GitHub App</text><text x="1110" y="185" font-size="19" fill="#4A4757" font-weight="500" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Only select repositories</text><rect x="1110" y="215" width="420" height="120" rx="10" fill="#F3EEE6"/><circle cx="1136" cy="245" r="9" fill="#fff" stroke="#9C968C" stroke-width="2.5"/><text x="1156" y="252" font-size="18" fill="#8B8796" font-weight="500" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >All repositories</text><circle cx="1136" cy="285" r="9" fill="#fff" stroke="#6B4EFF" stroke-width="3"/><circle cx="1136" cy="285" r="4.5" fill="#6B4EFF"/><text x="1156" y="292" font-size="18" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Only select repositories</text><rect x="1156" y="305" width="250" height="24" rx="12" fill="#fff" stroke="#6B4EFF"/><text x="1170" y="323" font-size="15" fill="#6B4EFF" font-weight="700" text-anchor="start" font-family="Mono, monospace" >✓ my-video-studio</text><rect x="1110" y="395" width="420" height="48" rx="10" fill="#1F883D"/><text x="1320.0" y="426.0" font-size="19" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Install</text><circle cx="1540" cy="60" r="19" fill="#FF5A3C"/><text x="1540" y="67" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >3</text><text x="800" y="540" font-size="19" fill="#8B8796" font-weight="500" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" font-style="italic">Pro and Max: a "Default" environment is then created for you automatically.</text></svg><figcaption>The connection flow: claude.ai/code ⇄ GitHub authorization ⇄ Claude GitHub App on your studio repo.</figcaption></figure>
+
+<div class="callout warn"><div class="callout-label">Watch out</div><p><strong>"My repository doesn't appear!"</strong> This almost always means the Claude GitHub App isn't installed on it. Repeat steps 3–4 and make sure <code>my-video-studio</code> is selected. You can add more repositories to the app later from the same page.</p></div>
+<h2 id="step-4-tune-your-environment">Step 4 · Tune your <em>environment</em></h2>
+<p class="lead">Two settings make the difference between "it works" and "it works beautifully": internet access and the startup script.</p>
+
+<p>Your <strong>environment</strong> is the saved setup for every cloud computer Claude uses. The Default one has <strong>Trusted</strong> network access: it can reach package registries and GitHub, but not the websites where free voices, sound libraries and fonts live. We'll fix that and add the starter kit.</p>
+<h3>Open the environment settings</h3>
+<ol>
+<li>On the <strong>new session</strong> screen at claude.ai/code, look at the row of controls <strong>under the message box</strong>. The first control is the <strong>environment selector</strong>.</li>
+<li>Find <strong>Default</strong> under <strong>Cloud</strong>, hover over it and click the <strong>settings icon</strong> that appears on the right.</li>
+</ol>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 960" role="img"><rect width="1600" height="960" rx="22" fill="#F6F2EC"/><rect x="40" y="30" width="1520" height="900" rx="16" fill="#FFFFFF" stroke="#E2DCD2" stroke-width="2"/><path d="M40 46 a16 16 0 0 1 16 -16 h1488 a16 16 0 0 1 16 16 v40 h-1520 z" fill="#EFEAE2"/><circle cx="68" cy="58" r="7" fill="#FF6159"/><circle cx="90" cy="58" r="7" fill="#FFBD2E"/><circle cx="112" cy="58" r="7" fill="#28C941"/><rect x="150" y="43" width="1380" height="30" rx="15" fill="#FFFFFF" stroke="#E2DCD2"/><text x="170" y="64" font-size="17" fill="#4A4757" font-weight="500" text-anchor="start" font-family="Mono, monospace" >claude.ai/code</text><text x="800" y="160" font-size="30" fill="#17161F" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >What should Claude work on?</text><rect x="300" y="190" width="1000" height="120" rx="18" fill="#fff" stroke="#CFC8BC" stroke-width="2"/><text x="330" y="235" font-size="20" fill="#8B8796" font-weight="500" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Describe a task…</text><rect x="320" y="325" width="170" height="40" rx="20" fill="#ECE8FF" stroke="#6B4EFF" stroke-width="2"/><text x="405.0" y="351" font-size="16" fill="#6B4EFF" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >☁ Default ▾</text><rect x="510" y="325" width="220" height="40" rx="20" fill="#F3EEE6" stroke="#E2DCD2" stroke-width="2"/><text x="620.0" y="351" font-size="16" fill="#4A4757" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >my-video-studio ▾</text><rect x="750" y="325" width="180" height="40" rx="20" fill="#F3EEE6" stroke="#E2DCD2" stroke-width="2"/><text x="840.0" y="351" font-size="16" fill="#4A4757" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Accept edits ▾</text><circle cx="310" cy="345" r="19" fill="#FF5A3C"/><text x="310" y="352" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >1</text><rect x="40" y="86" width="1520" height="844" fill="#17161F" opacity=".35"/><rect x="380" y="300" width="840" height="590" rx="20" fill="#fff"/><text x="420" y="355" font-size="26" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Edit environment · Default</text><rect x="420" y="395" width="760" height="85" rx="12" fill="#F3EEE6"/><text x="445" y="429" font-size="19" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Name</text><text x="445" y="459" font-size="18" fill="#4A4757" font-weight="600" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Default</text><text x="1155" y="445" font-size="30" fill="#8B8796" font-weight="500" text-anchor="end" font-family="Grotesk, Inter, sans-serif" >›</text><rect x="420" y="500" width="760" height="85" rx="12" fill="#F3EEE6"/><text x="445" y="534" font-size="19" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Network access</text><text x="445" y="564" font-size="18" fill="#6B4EFF" font-weight="600" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Full</text><text x="1155" y="550" font-size="30" fill="#8B8796" font-weight="500" text-anchor="end" font-family="Grotesk, Inter, sans-serif" >›</text><circle cx="1210" cy="542" r="19" fill="#FF5A3C"/><text x="1210" y="549" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >2</text><rect x="420" y="605" width="760" height="85" rx="12" fill="#F3EEE6"/><text x="445" y="639" font-size="19" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Setup script</text><text x="445" y="669" font-size="15" fill="#6B4EFF" font-weight="600" text-anchor="start" font-family="Mono, monospace" >git clone --depth 1 https://github.com/…/claude-video-starter-kit …</text><text x="1155" y="655" font-size="30" fill="#8B8796" font-weight="500" text-anchor="end" font-family="Grotesk, Inter, sans-serif" >›</text><circle cx="1210" cy="647" r="19" fill="#FF5A3C"/><text x="1210" y="654" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >3</text><rect x="420" y="710" width="760" height="85" rx="12" fill="#F3EEE6"/><text x="445" y="744" font-size="19" fill="#17161F" font-weight="700" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >Environment variables</text><text x="445" y="774" font-size="18" fill="#4A4757" font-weight="600" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >—</text><text x="1155" y="760" font-size="30" fill="#8B8796" font-weight="500" text-anchor="end" font-family="Grotesk, Inter, sans-serif" >›</text><rect x="960" y="820" width="220" height="48" rx="10" fill="#6B4EFF"/><text x="1070.0" y="851.0" font-size="19" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Save changes</text><circle cx="1210" cy="844" r="19" fill="#FF5A3C"/><text x="1210" y="851" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >4</text></svg><figcaption>Simplified illustration of the environment dialog: Network access, Setup script, Environment variables.</figcaption></figure>
+<h3>Set Network access to Full</h3>
+<p>Select the <strong>Network access</strong> row and choose <strong>Full</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>What sessions can reach</th>
+<th>Good for video?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>None</td>
+<td>Nothing</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>Trusted (default)</td>
+<td>Package registries, GitHub, cloud SDKs</td>
+<td>Partly: no voices, sound libraries or fonts</td>
+</tr>
+<tr>
+<td><strong>Full</strong></td>
+<td><strong>Any website</strong></td>
+<td><strong>✓ Recommended</strong></td>
+</tr>
+<tr>
+<td>Custom</td>
+<td>Your own list of domains</td>
+<td>✓ For advanced users</td>
+</tr>
+</tbody>
+</table>
+<div class="callout note"><div class="callout-label">Good to know</div><p><strong>Prefer Custom?</strong> Allow at least: <code>huggingface.co</code>, <code>cdn.jsdelivr.net</code>, <code>fonts.googleapis.com</code>, <code>fonts.gstatic.com</code>, <code>api.openverse.org</code>, <code>cdn.freesound.org</code>, <code>api.quran.com</code> and <code>api.alquran.cloud</code> (for faith content), and keep the default list included.</p></div>
+<h3>Paste the setup script</h3>
+<p>Select the <strong>Setup script</strong> row and paste this single line:</p>
+<pre><code class="language-bash">git clone --depth 1 https://github.com/JimmyDamelio/claude-video-starter-kit /tmp/kit &amp;&amp; sh /tmp/kit/install.sh
+</code></pre>
+<p>Then click <strong>Save changes</strong>.</p>
+<p>From now on, <strong>every new session</strong> starts with the starter kit installed: the video skills, the motion-design and sound skills, the templates, plus ffmpeg and a headless browser if they're missing. It's quick by design, because setup scripts should finish in about five minutes.</p>
+<div class="callout tip"><div class="callout-label">Tip</div><p>The heavier tools (free voices and the "ears" that let Claude listen to audio) are installed <strong>on demand</strong>. When a video needs them, just say <em>"install the media tools"</em> and Claude runs <code>sh /tmp/kit/install.sh --media</code>. It takes 2–4 minutes.</p></div>
+
+<div class="callout note"><div class="callout-label">Good to know</div><p><strong>Changing settings during a session:</strong> click the small arrow after the session title at the top and choose <strong>Edit cloud environment</strong>.</p></div>
+<h2 id="step-5-your-first-session-check-everything">Step 5 · Your first session: <em>check everything</em></h2>
+<p class="lead">Two minutes to make sure the studio is ready, and to teach Claude your brand once and for all.</p>
+
+<ol>
+<li>On claude.ai/code, click the <strong>repository selector</strong> under the message box and choose <code>my-video-studio</code>.</li>
+<li>Pick a <strong>permission mode</strong>. <strong>Accept edits</strong> (or <strong>Auto</strong>, if you see it) lets Claude work without stopping for approval at every step, which is what you want for long video jobs.</li>
+<li>Paste this prompt:</li>
+</ol>
+<div class="prompt" id="prompt-1"><div class="prompt-head"><span class="prompt-label">PROMPT 01</span><span class="prompt-title">Studio check</span></div><div class="prompt-body">Check that my video studio is ready. Run `sh /tmp/kit/install.sh --doctor` and tell me in a short list what&#x27;s installed and what&#x27;s missing (skills, ffmpeg, headless browser, voices, sound tools). If something essential is missing, fix it. Don&#x27;t create any video yet.</div></div>
+<h3>Teach Claude your brand (do this once)</h3>
+<p>Claude reads a file called <strong>CLAUDE.md</strong> at the start of every session in a repo. Put your brand in it, and every video comes out on-brand without you repeating yourself.</p>
+<div class="prompt" id="prompt-2"><div class="prompt-head"><span class="prompt-label">PROMPT 02</span><span class="prompt-title">Create my studio brief</span></div><div class="prompt-body">Interview me to create my studio brief. Ask me, one short question at a time: my account/brand name, my niche and audience, the language of my videos, 3–5 brand colours (or let me pick from palettes you propose), my fonts (or propose some), the tone (e.g. calm, punchy, funny), whether I use music or not, voice-over or not, my usual formats (9:16 / 1:1 / 16:9), and any rules (things I never want to see). Then write it all into CLAUDE.md at the root of this repo, as clear instructions for future video sessions, and push it to GitHub.</div></div>
+
+<div class="callout tip"><div class="callout-label">Tip</div><p>Run this again whenever your brand evolves, or open CLAUDE.md on github.com and edit it directly.</p></div>
+
+
+<section class="part" id="part-3"><div class="part-num">Part 3</div><h1 class="part-title">Your first video</h1><p class="part-sub">From one prompt to a finished MP4, then how to direct Claude like a creative director.</p></section>
+<h2 id="the-anatomy-of-a-great-video-prompt">The anatomy of a <em>great</em> video prompt</h2>
+<p class="lead">Claude can do a lot with very little, but the more precisely you describe the film, the closer the first version lands.</p>
+
+<p>A weak prompt:</p>
+<blockquote>
+<p>make a video about productivity</p>
+</blockquote>
+<p>A strong prompt answers the questions a director would ask. Use these eight blocks, or just the ones you care about:</p>
+<table>
+<thead>
+<tr>
+<th>Block</th>
+<th>What to say</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Goal</strong></td>
+<td>What the viewer should feel or do</td>
+<td>"Make people save it and try tip #3 tonight"</td>
+</tr>
+<tr>
+<td><strong>Format</strong></td>
+<td>Ratio, length, platform</td>
+<td>"9:16 Instagram Reel, 35–45 s"</td>
+</tr>
+<tr>
+<td><strong>Hook</strong></td>
+<td>The first 2 seconds</td>
+<td>"Big '5' and 'habits that fix your mornings'"</td>
+</tr>
+<tr>
+<td><strong>Beats</strong></td>
+<td>The scenes, in order</td>
+<td>"Hook → 5 habits, one scene each → recap → question"</td>
+</tr>
+<tr>
+<td><strong>Style</strong></td>
+<td>Look, colours, fonts, characters</td>
+<td>"Flat pastel, faceless pill-shaped characters, cream on navy"</td>
+</tr>
+<tr>
+<td><strong>Text</strong></td>
+<td>On-screen words, subtitles</td>
+<td>"Short titles with one highlighted keyword"</td>
+</tr>
+<tr>
+<td><strong>Sound</strong></td>
+<td>Music, voice, effects</td>
+<td>"No voice. Soft UI pops on every appearance, light ambience"</td>
+</tr>
+<tr>
+<td><strong>Checks</strong></td>
+<td>What Claude must verify</td>
+<td>"Check stills before the full render; keep text inside safe zones"</td>
+</tr>
+</tbody>
+</table>
+<h3>The master prompt (fill in the brackets)</h3>
+<div class="prompt" id="prompt-3"><div class="prompt-head"><span class="prompt-label">PROMPT 03</span><span class="prompt-title">The master template</span></div><div class="prompt-body">Make a [9:16 Instagram Reel / 1:1 post / 16:9 YouTube video] of [LENGTH] seconds about [TOPIC].
+Goal: [WHAT THE VIEWER SHOULD FEEL OR DO].
+Hook (first 2 seconds): [HOOK LINE + VISUAL].
+Beats: [SCENE 1] → [SCENE 2] → [SCENE 3] → [ENDING / CALL TO ACTION].
+Style: [STYLE], palette [COLOURS], fonts [FONTS OR &quot;you choose&quot;], [CHARACTERS / ILLUSTRATIONS].
+On-screen text: [SUBTITLES / TITLES / KEY WORDS HIGHLIGHTED], large and readable on a phone, inside the safe zone (nothing important in the top 12% or bottom 20%).
+Sound: [MUSIC STYLE or &quot;no music&quot;], [VOICE-OVER: voice + language, or &quot;no voice&quot;], [SOUND EFFECTS].
+Facts: use only information I give you or that you verify from a reliable source; show sources on screen if relevant.
+Process: storyboard first and show it to me, then render key stills and check them yourself, then render the full video at 30 fps, then check the final contact sheet. Save the MP4 in videos/ and push it to GitHub.</div></div>
+
+<div class="callout tip"><div class="callout-label">Tip</div><p><strong>"Storyboard first and show it to me"</strong> is the most valuable sentence in any video prompt. You catch a wrong idea in 30 seconds instead of after a full render.</p></div>
+<h2 id="your-first-video-in-15-minutes">Your first video in <em>15 minutes</em></h2>
+<p class="lead">Let's make a real reel now. Pick any topic you know well.</p>
+
+<ol>
+<li>Open claude.ai/code, choose your <code>my-video-studio</code> repo and <strong>Accept edits</strong> mode.</li>
+<li>Paste the prompt below, replacing the topic.</li>
+<li>Read the storyboard Claude proposes. Reply <em>"go"</em> or ask for changes.</li>
+<li>Wait while Claude renders. A 30–60 s reel usually takes a few minutes. You can close the tab: the session keeps working in the cloud.</li>
+</ol>
+<div class="prompt" id="prompt-4"><div class="prompt-head"><span class="prompt-label">PROMPT 04</span><span class="prompt-title">My first reel</span></div><div class="prompt-body">Make a 25-second 9:16 Instagram Reel: &quot;3 [TOPIC] tips nobody tells you&quot;.
+Hook: a giant &quot;3&quot; that pops in, with the title. Then one scene per tip (6 s each): a short bold title with one highlighted keyword, an italic one-line explanation, and a simple animated illustration with flat, faceless pastel characters. End with &quot;Which one will you try first?&quot;.
+Style: dark navy background, warm amber highlight, cream text, modern grotesk font plus an elegant italic serif for accents.
+Sound: no voice, no music: soft real UI sound effects (pops, ticks, whooshes) on every appearance, plus a quiet ambience.
+Storyboard first, then check key stills yourself, then render at 30 fps, check the final contact sheet, save the MP4 in videos/ and push it to GitHub.</div></div>
+<h3>What you'll see Claude do</h3>
+<ol>
+<li><strong>Storyboard:</strong> a table of scenes with timings and text.</li>
+<li><strong>Stills check:</strong> it renders a handful of frames, looks at them (yes, it can see images), and fixes overlaps, empty moments or unreadable text.</li>
+<li><strong>Sound:</strong> it finds or makes the audio and places each effect on its frame.</li>
+<li><strong>Full render</strong> and a final <strong>contact sheet</strong>: a grid of frames from the finished video, its last quality check.</li>
+<li><strong>Push:</strong> the MP4 lands in your repo.</li>
+</ol>
+<h3>Download your video</h3>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 490" role="img"><rect width="1600" height="490" rx="22" fill="#F6F2EC"/><rect x="40" y="30" width="1520" height="430" rx="16" fill="#FFFFFF" stroke="#E2DCD2" stroke-width="2"/><path d="M40 46 a16 16 0 0 1 16 -16 h1488 a16 16 0 0 1 16 16 v40 h-1520 z" fill="#EFEAE2"/><circle cx="68" cy="58" r="7" fill="#FF6159"/><circle cx="90" cy="58" r="7" fill="#FFBD2E"/><circle cx="112" cy="58" r="7" fill="#28C941"/><rect x="150" y="43" width="1380" height="30" rx="15" fill="#FFFFFF" stroke="#E2DCD2"/><text x="170" y="64" font-size="17" fill="#4A4757" font-weight="500" text-anchor="start" font-family="Mono, monospace" >github.com/yourbrand/my-video-studio/blob/main/videos/my-first-reel.mp4</text><text x="100" y="140" font-size="22" fill="#17161F" font-weight="700" text-anchor="start" font-family="Mono, monospace" >my-video-studio / videos / my-first-reel.mp4</text><rect x="100" y="170" width="1400" height="64" rx="10" fill="#F3EEE6" stroke="#E2DCD2"/><text x="125" y="210" font-size="18" fill="#4A4757" font-weight="600" text-anchor="start" font-family="Grotesk, Inter, sans-serif" >8.4 MB</text><rect x="1230" y="180" width="70" height="44" rx="8" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><text x="1265" y="209" font-size="20" fill="#4A4757" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Raw</text><rect x="1315" y="180" width="70" height="44" rx="8" fill="#fff" stroke="#E2DCD2" stroke-width="2"/><text x="1350" y="209" font-size="20" fill="#4A4757" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >⧉</text><rect x="1400" y="180" width="70" height="44" rx="8" fill="#fff" stroke="#FF5A3C" stroke-width="3"/><text x="1435" y="209" font-size="20" fill="#FF5A3C" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >⤓</text><circle cx="1490" cy="160" r="19" fill="#FF5A3C"/><text x="1490" y="167" font-size="20" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >1</text><text x="1110" y="290" font-size="20" fill="#FF5A3C" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >Download raw file</text><rect x="100" y="260" width="300" height="160" rx="10" fill="#0D1117"/><text x="250" y="350" font-size="46" fill="#fff" font-weight="700" text-anchor="middle" font-family="Grotesk, Inter, sans-serif" >▶</text></svg><figcaption>On github.com, open the MP4 and click Download raw file.</figcaption></figure>
+<ul>
+<li><strong>From GitHub (always works):</strong> open your repo on github.com → <code>videos/</code> → click the MP4 → click the <strong>Download raw file</strong> button (the down-arrow icon at the top right of the file).</li>
+<li><strong>From the chat:</strong> if Claude shows a file card with a download button, use it.</li>
+<li><strong>To your phone:</strong> download on your computer, then send it to yourself (Google Drive, Telegram "Saved Messages", AirDrop…), or open github.com on your phone.</li>
+</ul>
+<div class="callout warn"><div class="callout-label">Watch out</div><p>Cloud sessions are wiped after a period of inactivity. Anything not pushed to GitHub can disappear. If you're not sure, ask: <em>"Is everything pushed?"</em></p></div>
+<h2 id="direct-like-a-pro">Direct like a <em>pro</em></h2>
+<p class="lead">The first render is a draft. The magic is in the second and third.</p>
+
+<h3>Say what you see, and where</h3>
+<p>Claude fixes precise feedback instantly. Vague feedback ("make it better") gets random changes.</p>
+<table>
+<thead>
+<tr>
+<th>Instead of…</th>
+<th>Say…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"It's ugly"</td>
+<td>"The title at 0:08 overlaps the illustration. Move the illustration down 100 px."</td>
+</tr>
+<tr>
+<td>"Too slow"</td>
+<td>"Each scene feels long. Cut scenes to 4 s and make the words pop in faster."</td>
+</tr>
+<tr>
+<td>"Not readable"</td>
+<td>"The subtitle on the light background has low contrast. Add a dark band behind it."</td>
+</tr>
+<tr>
+<td>"More dynamic"</td>
+<td>"Add a 1.1× scale pop with overshoot on each title word and a whoosh on each scene change."</td>
+</tr>
+<tr>
+<td>"Different vibe"</td>
+<td>"Keep the layout but switch to a cream background with coral and teal accents."</td>
+</tr>
+</tbody>
+</table>
+<h3>Useful vocabulary</h3>
+<ul>
+<li><strong>Ease / easing:</strong> how motion speeds up and slows down. <em>"Ease-out on entrances, ease-in on exits."</em></li>
+<li><strong>Overshoot / bounce:</strong> the playful "pop" past the final size. <em>"Back-ease with a slight overshoot."</em></li>
+<li><strong>Stagger:</strong> elements appearing one after another. <em>"Stagger the list items by 0.15 s."</em></li>
+<li><strong>Safe zone:</strong> where the app's interface doesn't cover your video. <em>"Keep text out of the bottom 20%."</em></li>
+<li><strong>Contact sheet:</strong> a grid of frames to review the whole film at a glance. <em>"Show me a contact sheet."</em></li>
+<li><strong>Beat / cue:</strong> a moment where something happens. <em>"Put a soft hit on every cue."</em></li>
+</ul>
+<h3>Iteration prompts that work</h3>
+<div class="prompt" id="prompt-5"><div class="prompt-head"><span class="prompt-label">PROMPT 05</span><span class="prompt-title">Review pass</span></div><div class="prompt-body">Before changing anything, render a contact sheet of the current video (one frame every 2 seconds) and critique it like a senior motion designer: readability on a phone, empty moments, overlaps, pacing, contrast, safe zones. List the 5 most important fixes, then apply them and show me a new contact sheet.</div></div>
+
+<div class="prompt" id="prompt-6"><div class="prompt-head"><span class="prompt-label">PROMPT 06</span><span class="prompt-title">Make it more addictive</span></div><div class="prompt-body">Make this reel more addictive without making it longer: a stronger first 2 seconds (big number or bold claim), something moving at all times, a sound on every appearance, a progress indicator so viewers know how many items are left, and a final recap screen people want to save.</div></div>
+
+<div class="prompt" id="prompt-7"><div class="prompt-head"><span class="prompt-label">PROMPT 07</span><span class="prompt-title">Turn it into a template</span></div><div class="prompt-body">Turn this video into a reusable template in templates/[NAME]/: keep the style, timings, sound design and code, but move all the text and data into one simple file I can edit for the next episode. Write a short README explaining how to make the next one, and push.</div></div>
+<h3>Keep sessions focused</h3>
+<ul>
+<li><strong>One video per session.</strong> Long sessions fill Claude's working memory (the <em>context</em>). Start a new session for the next video.</li>
+<li>Use <strong><code>/compact</code></strong> to summarise a long conversation, or <strong><code>/clear</code></strong> to start fresh in the same session.</li>
+<li>For complex films, you can raise the reasoning effort with <strong><code>/effort</code></strong>, for example <code>/effort high</code>. Higher effort means more detail and more usage.</li>
+<li>Videos with many scenes can take a while. Let Claude work, and come back later.</li>
+</ul>
+<div class="callout note"><div class="callout-label">Good to know</div><p>Your plan has usage limits that reset over time. Rendering itself happens on the cloud computer, but every message, image check and fix uses your plan. The <em>"storyboard first"</em> and <em>"check stills first"</em> habits save a lot of usage.</p></div>
+
+<h2 id="three-real-videos-dissected">Three real videos, <em>dissected</em></h2>
+<p class="lead">All three were made with the exact setup in this book. Here's what made each one work.</p>
+
+<h3>1 · A watercolour launch trailer for an ebook (30 s, 16:9)</h3>
+<div class="gallery g3">
+<img src="assets/gallery/trailer-night.jpg"><img src="assets/gallery/trailer-grid.jpg"><img src="assets/gallery/trailer-book.jpg">
+</div>
+
+<ul>
+<li><strong>Story:</strong> a 3 a.m. wake-up (the problem) → floating words of what the reader feels → a 30-day grid where a pattern gets circled (the "aha") → the book appears → proof → a calm end card with price and link.</li>
+<li><strong>Style:</strong> watercolour washes, slightly "boiling" ink lines, paper grain, a slow camera push. The palette came from the book's cover.</li>
+<li><strong>Sound:</strong> a soft piano score and chimes synthesised in code, with paper "swooshes" on the transitions.</li>
+<li><strong>Lesson:</strong> the trailer tells the <em>reader's</em> story, not the product's. The product only appears at the halfway point.</li>
+</ul>
+<h3>2 · A cinematic Qur'an verse reel (46 s, 9:16)</h3>
+<div class="gallery g4">
+<img src="assets/gallery/mercy-2.jpg"><img src="assets/gallery/mercy-13.6.jpg"><img src="assets/gallery/mercy-22.jpg"><img src="assets/gallery/mercy-44.jpg">
+</div>
+
+<ul>
+<li><strong>Story:</strong> a rainy night and a closed door ("Have you ever felt like you've gone too far?") → the door opens onto light → the verse appears word by word → dawn rises and the rain stops → "ALL", then "My servants" → an end card with a share prompt.</li>
+<li><strong>Accuracy:</strong> the Arabic was fetched from the quran.com API in the encoding made for the official KFGQPC font, and the translation was quoted exactly. The first font tried misplaced two marks; checking the rendering at high zoom caught it before publishing.</li>
+<li><strong>Sound:</strong> real CC0 recordings only (rain with distant thunder, wind, a creaking door, birds at dawn), no music, and a warm female voice for the English meaning, with "Allah" pronunciation fixed.</li>
+<li><strong>Lesson:</strong> a <em>visual metaphor</em> (a closed door that opens) makes an abstract message instantly felt.</li>
+</ul>
+<h3>3 · A faceless "7 sunnahs before you sleep" listicle (61 s, 9:16)</h3>
+<div class="gallery g4">
+<img src="assets/gallery/sleep-2.4.jpg"><img src="assets/gallery/sleep-20.jpg"><img src="assets/gallery/sleep-35.jpg"><img src="assets/gallery/sleep-56.5.jpg">
+</div>
+
+<ul>
+<li><strong>Hook:</strong> a giant "7" plus <em>"#4 puts a guard over you until morning"</em>. That curiosity line keeps people watching to item 4, and it's an authentic quote from the source.</li>
+<li><strong>Retention:</strong> progress dots, something moving at all times, a keyword in an amber box in every title, and a recap checklist people save.</li>
+<li><strong>Characters:</strong> faceless pastel "pill people" (round head + capsule body) that wash, shake out a bed, sit, recite and sleep.</li>
+<li><strong>Sound:</strong> no voice, no music. 72 small CC0 interface sounds placed on the film's own cue list (about 1.2 per second), plus night crickets.</li>
+<li><strong>Lesson:</strong> this format is <em>infinitely repeatable</em>. Save it as a template and every next episode takes minutes.</li>
+</ul>
+<div class="callout tip"><div class="callout-label">Tip</div><p>Ask Claude to <em>"analyse this reference video and make the same kind of video about [TOPIC] with my brand colours"</em>, and attach the MP4. Claude can study a video frame by frame and analyse its soundtrack, then reproduce the recipe without copying the content.</p></div>
+
+
+<section class="part" id="part-4"><div class="part-num">Part 4</div><h1 class="part-title">Sound that sells</h1><p class="part-sub">Voice-overs, real sound effects and silence, and how Claude can actually listen to its own mix.</p></section>
+<h2 id="voice-over-with-free-voices">Voice-over with <em>free voices</em></h2>
+<p class="lead">Natural-sounding narration in English, French and a dozen other languages, generated in seconds, at no extra cost.</p>
+
+<p>The starter kit uses two free, open-source voice engines that run on Claude's cloud computer:</p>
+<table>
+<thead>
+<tr>
+<th>Engine</th>
+<th>Strengths</th>
+<th>Example voices</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Kokoro</strong></td>
+<td>The most natural. Many English voices, plus French, Spanish, Italian, Portuguese, Hindi, Japanese, Chinese</td>
+<td><code>af_heart</code> (warm, female), <code>af_bella</code>, <code>bf_emma</code> (British, female), <code>am_michael</code> (male), <code>bm_george</code> (British, male), <code>ff_siwis</code> (French, female)</td>
+</tr>
+<tr>
+<td><strong>Piper</strong></td>
+<td>Very fast and light</td>
+<td>French and English voices</td>
+</tr>
+</tbody>
+</table>
+<p>To use them, first say <em>"install the media tools"</em> (once per session, 2–4 minutes). Then just describe the voice you want in your prompt.</p>
+<div class="prompt" id="prompt-8"><div class="prompt-head"><span class="prompt-label">PROMPT 08</span><span class="prompt-title">Voice audition</span></div><div class="prompt-body">Before making the video, generate the same 2-sentence line with 4 different voices (warm female, calm male, British female, energetic) and put the clips in audio/auditions/ so I can listen and choose. Line: &quot;[YOUR LINE]&quot;.</div></div>
+<h3>Make the voice drive the edit</h3>
+<p>The best-paced videos are timed <strong>to the voice</strong>, not the other way around. Ask Claude to generate the narration first, measure each sentence, and then set the scene timings, with word-by-word subtitles synced to the speech.</p>
+<div class="prompt" id="prompt-9"><div class="prompt-head"><span class="prompt-label">PROMPT 09</span><span class="prompt-title">Voice-first video</span></div><div class="prompt-body">Write a 35-second voice-over script for [TOPIC] in a warm, conversational tone (short sentences, one idea each). Generate it with a warm female voice at a slightly slow pace. Then build the 9:16 video around the voice: one scene per sentence, subtitles that highlight each word as it&#x27;s spoken, and visuals that change on the voice&#x27;s natural pauses. Duck any background sound under the voice.</div></div>
+
+<div class="callout tip"><div class="callout-label">Tip</div><p><strong>Pronunciation fixes.</strong> If a name or foreign word sounds wrong ("Al-lah" read as "Ala", a brand name, a city), tell Claude: <em>"The voice mispronounces X. Fix it phonetically."</em> Text-to-speech engines accept phonetic spellings, and Claude knows how to apply them.</p></div>
+
+<div class="callout warn"><div class="callout-label">Watch out</div><p>Some platforms ask you to <strong>label realistic AI-generated audio</strong>. On Instagram and Facebook, use the <strong>AI info</strong> label when you publish a video with an AI voice. It's honest, and it protects your account.</p></div>
+<h2 id="real-sound-effects-and-no-music-videos">Real sound effects (and <em>no-music</em> videos)</h2>
+<p class="lead">The difference between "made by AI" and "made by a studio" is often just the sound.</p>
+
+<h3>Where the sounds come from</h3>
+<ul>
+<li><strong>Openverse:</strong> a search engine for over 800 million openly licensed works, including tens of thousands of sound effects from Freesound. The starter kit's <code>openverse</code> skill searches it, prefers <strong>CC0</strong> (no attribution needed) and keeps a <strong>CREDITS.csv</strong> of everything it downloads.</li>
+<li><strong>Bundled UI sounds:</strong> 78 small interface sounds (pops, ticks, whooshes, chimes) in 12 styles, all CC0. Perfect for animated listicles.</li>
+<li><strong>Synthesised sound:</strong> Claude can also compose music and effects in code (soft pads, piano, chimes). It's great for calm trailers, but recorded sound usually feels more premium.</li>
+</ul>
+<h3>Videos without music</h3>
+<p>Many creators prefer <strong>no music</strong>: faith content, calm educational content, or simply to stand out. A good no-music soundtrack combines:</p>
+<ol>
+<li><strong>Ambience:</strong> rain, night crickets, wind, a café, birds at dawn, at a low level.</li>
+<li><strong>Foley and effects:</strong> a door creaking open, pages turning, a soft impact on the key moment.</li>
+<li><strong>UI cues:</strong> a pop on every element that appears. This is what makes listicles feel "addictive".</li>
+<li><strong>Voice, or nothing:</strong> text on screen can carry the whole story.</li>
+</ol>
+<div class="prompt" id="prompt-10"><div class="prompt-head"><span class="prompt-label">PROMPT 10</span><span class="prompt-title">Real-sound design</span></div><div class="prompt-body">Design the soundtrack with real recordings only, no music: find CC0 sounds on Openverse for [AMBIENCE, e.g. light rain at night] and [EFFECTS, e.g. a wooden door opening, a soft deep impact, birds at dawn]. Pick the best candidates by listening to them with earshot, place each effect on the exact frame of its visual event, keep the ambience low under the voice, and save the credits in CREDITS.csv.</div></div>
+<h2 id="let-claude-listen">Let Claude <em>listen</em></h2>
+<p class="lead">Claude can't hear, but the starter kit gives it ears.</p>
+
+<p><strong>earshot</strong> is an open-source listening tool. It turns sound into evidence Claude can reason about:</p>
+<ul>
+<li><strong>describe</strong> what a sound file sounds like ("a creaking door", "crickets at night");</li>
+<li><strong>rank</strong> candidate sounds against a description, to pick the best whoosh out of ten;</li>
+<li><strong>find</strong> the cleanest moment inside a long recording;</li>
+<li><strong>critique</strong> a finished video's soundtrack against professional launch films: loudness, sync to picture, empty openings, endings that fall flat, harshness, stereo width, and whether it sounds synthetic.</li>
+</ul>
+<div class="prompt" id="prompt-11"><div class="prompt-head"><span class="prompt-label">PROMPT 11</span><span class="prompt-title">Sound review</span></div><div class="prompt-body">Run an earshot critique on the final video and explain the results to me in plain English. Fix every issue that matters for this style (ignore &quot;no music&quot; if the video is intentionally music-free), then run the critique again and show me the before/after scores.</div></div>
+
+<div class="callout note"><div class="callout-label">Good to know</div><p>earshot compares your film to music-led launch videos, so it always flags a missing music track. If no music is your choice, tell Claude to ignore that one point.</p></div>
+<h3>Loudness that fits social media</h3>
+<p>Reels and TikToks are watched on phones, often with the sound low. Ask for <strong>around −14 LUFS integrated</strong> (the standard for streaming platforms), peaks below <strong>−1 dBTP</strong>, and voices that stay clearly above the background. Claude can measure and fix this automatically. Just mention it once in your studio brief.</p>
+
+<section class="part" id="part-5"><div class="part-num">Part 5</div><h1 class="part-title">The prompt library</h1><p class="part-sub">Ready-to-copy prompts for every kind of video, each with variations. Replace the [BRACKETS] and go.</p></section>
+<h2 id="how-to-use-the-library">How to use the <em>library</em></h2>
+<p class="lead">Every prompt is a complete brief. Copy it, fill in the brackets, and add one line of your own if you want.</p>
+
+<ul>
+<li><strong>[BRACKETS]</strong> are yours to fill. Everything else can stay as is.</li>
+<li>Each prompt ends with the habits that make results reliable: storyboard first, check stills, push the MP4.</li>
+<li>Under many prompts you'll find <strong>variations</strong>: one-line swaps that change the format, mood or style.</li>
+<li>Your <strong>studio brief</strong> (CLAUDE.md) adds your brand automatically. If you haven't made one, add your colours and fonts to the prompt.</li>
+</ul>
+<h3>Mix-and-match modifiers</h3>
+<p>Add any of these lines to any prompt:</p>
+<table>
+<thead>
+<tr>
+<th>To change…</th>
+<th>Add…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Format</td>
+<td>"Make it 1:1 for the feed" · "16:9 for YouTube" · "Make all three: 9:16, 1:1 and 16:9"</td>
+</tr>
+<tr>
+<td>Length</td>
+<td>"Cut it to 15 seconds for a TikTok hook" · "Extend to 60 s with two more examples"</td>
+</tr>
+<tr>
+<td>Pace</td>
+<td>"Fast cuts every 1.5 s" · "Slow and cinematic, let each scene breathe"</td>
+</tr>
+<tr>
+<td>Mood</td>
+<td>"Calm and hopeful" · "Punchy and funny" · "Luxury and minimal" · "Nostalgic"</td>
+</tr>
+<tr>
+<td>Palette</td>
+<td>"Midnight &amp; amber" · "Cream, coral &amp; teal" · "Black &amp; neon green" · "Sage &amp; sand" · "Pastel candy"</td>
+</tr>
+<tr>
+<td>Characters</td>
+<td>"Faceless pill-shaped characters" · "Simple stick figures" · "A cute round mascot named [NAME]" · "No characters, just shapes and type"</td>
+</tr>
+<tr>
+<td>Text</td>
+<td>"Big bold words, one per beat" · "Elegant serif subtitles" · "Handwritten notes and arrows"</td>
+</tr>
+<tr>
+<td>Sound</td>
+<td>"No music, real ambience + UI pops" · "Soft piano score" · "Upbeat electronic, 120 BPM" · "Voice-over with a warm female voice"</td>
+</tr>
+<tr>
+<td>Language</td>
+<td>"All on-screen text in French" · "English voice, Arabic + English subtitles"</td>
+</tr>
+<tr>
+<td>Quality</td>
+<td>"/effort high, and do two review passes before the final render"</td>
+</tr>
+</tbody>
+</table>
+<h2 id="social-reels-that-stop-the-scroll">Social reels that <em>stop the scroll</em></h2>
+<div class="prompt" id="prompt-12"><div class="prompt-head"><span class="prompt-label">PROMPT 12</span><span class="prompt-title">Faceless listicle with characters</span></div><div class="prompt-body">Make a 45–60 s 9:16 Instagram Reel: &quot;[NUMBER] [THINGS] that [PROMISE]&quot;. Hook (0–2.5 s): a giant number popping in, the title, and a highlighted curiosity line: &quot;#[N] [INTRIGUING DETAIL]&quot;. Then one 6 s scene per item: a short bold title with ONE highlighted keyword in a coloured box, an italic one-line explanation, and a small animated scene with faceless pastel characters (round head + capsule body) acting it out. Show progress dots so viewers know how many are left. End with a recap checklist of all items ticking one by one, then a question: &quot;Which one are you starting today?&quot;. Style: [PALETTE], bold grotesk + italic serif accents. No voice. Sound: a soft pop on every appearance, a whoosh on scene changes, quiet ambience. Storyboard first, check stills, render at 30 fps, push the MP4.</div></div>
+<p><em>Variations:</em> "Make the characters do the action literally (walking, sleeping, cooking)" · "Add a source tag under each item" · "Use stick figures drawn with a hand-drawn boil effect".</p>
+<div class="prompt" id="prompt-13"><div class="prompt-head"><span class="prompt-label">PROMPT 13</span><span class="prompt-title">Cinematic quote reel</span></div><div class="prompt-body">Make a 30–40 s 9:16 cinematic reel around this quote: &quot;[QUOTE]&quot; by [AUTHOR]. Story: an emotional setup (2–3 short lines that describe a feeling the viewer knows), a visual turning point (a door opening, sunrise, rain stopping, light breaking through), then the quote revealed word by word in large elegant type, then one line of reflection, then an end card with the author&#x27;s name. Visuals: atmospheric illustrated scene ([SCENE, e.g. a lone lantern in the desert at night]), slow camera drift, light particles. Sound: [voice-over with a calm warm voice / no voice], real ambience and one soft impact on the reveal. Storyboard first.</div></div>
+<p><em>Variations:</em> "Night → dawn colour transition on the turning point" · "Typewriter reveal instead of word fade" · "Black and white with one accent colour".</p>
+<div class="prompt" id="prompt-14"><div class="prompt-head"><span class="prompt-label">PROMPT 14</span><span class="prompt-title">3 mistakes to avoid</span></div><div class="prompt-body">Make a 30 s 9:16 reel: &quot;3 [TOPIC] mistakes that [CONSEQUENCE]&quot;. Each mistake gets a red ✗ stamp animation, a short title and a quick visual of the mistake; then the fix appears with a green ✓, a swipe transition and the better version. End: &quot;Save this before your next [ACTIVITY]&quot;. Punchy pacing, bold condensed type, high contrast. UI sound effects on every stamp. Storyboard first, then render.</div></div>
+
+<div class="prompt" id="prompt-15"><div class="prompt-head"><span class="prompt-label">PROMPT 15</span><span class="prompt-title">Myth vs fact</span></div><div class="prompt-body">Make a 30 s 9:16 reel with 3 myth-vs-fact rounds about [TOPIC]. Each round: &quot;MYTH&quot; card slides in with the myth, a 1 s pause, the card flips (3D flip) to &quot;FACT&quot; with the truth and a one-line source. Use a split-colour layout (myth = muted grey, fact = vivid [COLOUR]). Countdown dots 1/3, 2/3, 3/3. Only use facts I give you or that you verify; show the source on screen. Sound: flip whoosh + soft ding on each fact.</div></div>
+
+<div class="prompt" id="prompt-16"><div class="prompt-head"><span class="prompt-label">PROMPT 16</span><span class="prompt-title">Countdown ranking</span></div><div class="prompt-body">Make a 40 s 9:16 &quot;Top 5 [THINGS]&quot; countdown from #5 to #1. Each entry: a huge number that slams in with a bass hit, the name, one reason, and a simple animated icon or illustration. Build suspense before #1 (darker background, a short drum roll from real recordings, then a bright reveal). End: &quot;Agree? Comment your #1&quot;. Bold, energetic, [PALETTE].</div></div>
+
+<div class="prompt" id="prompt-17"><div class="prompt-head"><span class="prompt-label">PROMPT 17</span><span class="prompt-title">Stat shock</span></div><div class="prompt-body">Make a 20 s 9:16 reel built on one surprising number: [STAT + SOURCE]. 0–3 s: the number counts up from 0 with ticking sounds and lands with an impact. 3–12 s: what it means, shown with a simple animated visual (dots filling a grid, a bar growing, a clock). 12–17 s: what the viewer can do about it. 17–20 s: the source and &quot;Follow for more&quot;. Clean data-journalism look, one accent colour.</div></div>
+
+<div class="prompt" id="prompt-18"><div class="prompt-head"><span class="prompt-label">PROMPT 18</span><span class="prompt-title">Before / after transformation</span></div><div class="prompt-body">Make a 25 s 9:16 before/after reel about [TRANSFORMATION, e.g. a messy morning routine → a calm one]. Left/right or top/bottom split; a wipe slider moves across to reveal the &quot;after&quot;. Show 3 concrete changes as labelled callouts with arrows. End with &quot;Try it for 7 days&quot;. Satisfying motion, soft clicks on each callout.</div></div>
+
+<div class="prompt" id="prompt-19"><div class="prompt-head"><span class="prompt-label">PROMPT 19</span><span class="prompt-title">Kinetic typography hook</span></div><div class="prompt-body">Make a 15 s 9:16 kinetic typography reel from this text: &quot;[3–5 SHORT LINES]&quot;. Each word appears on the beat with varied scale, weight and position (some words huge, some tiny), with snappy easing and occasional colour inversions. Keep it readable: max 3 words on screen at once. [Soundtrack: punchy electronic loop at 120 BPM / no music, typing and impact sounds]. Make the last line stay on screen for 2 s.</div></div>
+
+<div class="prompt" id="prompt-20"><div class="prompt-head"><span class="prompt-label">PROMPT 20</span><span class="prompt-title">Day-in-the-life timeline</span></div><div class="prompt-body">Make a 40 s 9:16 animated &quot;a day in the life of a [ROLE]&quot; reel. A clock in the corner advances through the day; each time stamp gets a quick illustrated scene with a faceless character (wake up, work, lunch, …). Use a soft colour shift from morning to night. Add a funny or honest caption under each scene. Light ambience that changes with the time of day (birds, office hum, evening crickets).</div></div>
+
+<div class="prompt" id="prompt-21"><div class="prompt-head"><span class="prompt-label">PROMPT 21</span><span class="prompt-title">Interactive question / poll</span></div><div class="prompt-body">Make a 20 s 9:16 reel that asks viewers a question: &quot;[QUESTION]?&quot; with 2–4 animated answer options (A, B, C) as cards. A timer bar runs for 5 s, then one answer is revealed with an explanation, OR (if there&#x27;s no right answer) end with &quot;Comment your letter!&quot;. Game-show energy: bright colours, bouncy animations, buzzer and ding sounds from real recordings.</div></div>
+
+<h2 id="business-trailers-ads-and-launches">Business: trailers, ads and <em>launches</em></h2>
+<div class="prompt" id="prompt-22"><div class="prompt-head"><span class="prompt-label">PROMPT 22</span><span class="prompt-title">Digital product trailer (ebook, course, template)</span></div><div class="prompt-body">Make a 30 s 16:9 launch trailer (plus a 9:16 version) for my product &quot;[NAME]&quot;: [ONE-LINE DESCRIPTION], price [PRICE], link [URL]. Story: 1) the viewer&#x27;s problem in one relatable scene, 2) &quot;What if…&quot; turning point, 3) the product revealed (a clean 3D-ish mock-up of the cover/screens with a soft shadow and a gentle float), 4) 3 benefits as animated callouts, 5) proof (numbers, testimonials or &quot;what&#x27;s inside&quot;), 6) end card: name, price, link. Use only claims I give you. Style: [STYLE + PALETTE]. Sound: [soft piano / upbeat / no music + real effects]. Storyboard first.</div></div>
+<p><em>Variations:</em> "Watercolour and ink style with hand-drawn arrows" · "Dark luxury: black, gold, slow reveals" · "Add a 6 s cut-down for ads".</p>
+<div class="prompt" id="prompt-23"><div class="prompt-head"><span class="prompt-label">PROMPT 23</span><span class="prompt-title">App / SaaS launch video</span></div><div class="prompt-body">Make a 40 s 16:9 product launch video for [APP NAME], an app that [WHAT IT DOES]. Show stylised UI mock-ups (not screenshots) of 3 key screens: [SCREEN 1], [SCREEN 2], [SCREEN 3], animated as if someone is using them (cursor, taps, cards sliding, numbers updating). Open with the pain point, end with the logo and &quot;[CALL TO ACTION]&quot;. Clean modern look, [BRAND COLOURS], smooth easing, subtle depth and shadows. Modern electronic score at 110–120 BPM with whooshes and UI clicks synced to the motion.</div></div>
+
+<div class="prompt" id="prompt-24"><div class="prompt-head"><span class="prompt-label">PROMPT 24</span><span class="prompt-title">Feature explainer (one feature, 20 s)</span></div><div class="prompt-body">Make a 20 s 9:16 reel explaining one feature of [PRODUCT]: [FEATURE]. Structure: &quot;Did you know you can [BENEFIT]?&quot; → 3 steps shown on a simplified phone mock-up (tap, swipe, result) with numbered highlights → the result → &quot;Try it today&quot;. Keep text short, add a progress bar across the bottom of the safe zone.</div></div>
+
+<div class="prompt" id="prompt-25"><div class="prompt-head"><span class="prompt-label">PROMPT 25</span><span class="prompt-title">Sale / promo announcement</span></div><div class="prompt-body">Make a 15 s 9:16 promo for [OFFER, e.g. -30% this weekend] at [SHOP]. Bold, high-energy: a big percentage slams in, products (from my descriptions or simple illustrations) fly in on a grid, a countdown timer ticks, end with the code [CODE] and the link. Retro-pop style with halftone dots and thick outlines. Cash-register and pop sounds.</div></div>
+
+<div class="prompt" id="prompt-26"><div class="prompt-head"><span class="prompt-label">PROMPT 26</span><span class="prompt-title">Animated testimonial card</span></div><div class="prompt-body">Make a 20 s 9:16 testimonial video from this review: &quot;[REVIEW]&quot; — [NAME, ROLE]. A clean card with 5 stars that fill one by one, the quote typed in with key words highlighted, the person&#x27;s initials in a circle (no fake photos), and the product name at the end. Calm, trustworthy palette. Soft ticks on each star.</div></div>
+
+<div class="prompt" id="prompt-27"><div class="prompt-head"><span class="prompt-label">PROMPT 27</span><span class="prompt-title">Logo sting / channel intro</span></div><div class="prompt-body">Make a 5 s logo sting for [BRAND NAME] in 16:9 and 9:16. The logo is built from [SHAPES / LETTERS] that assemble with satisfying motion (overshoot, then settle), a light sweep across it, and the tagline &quot;[TAGLINE]&quot; fading in. One signature sound: [a soft whoosh + chime / a deep impact / a playful pop]. Export a version with transparent background too (WebM with alpha) if possible.</div></div>
+
+<div class="prompt" id="prompt-28"><div class="prompt-head"><span class="prompt-label">PROMPT 28</span><span class="prompt-title">Event promo with countdown</span></div><div class="prompt-body">Make a 25 s 9:16 promo for [EVENT] on [DATE] at [PLACE/ONLINE]. Show what people will get (3 animated highlights), the speakers or guests as stylised initial badges, a live-feeling countdown &quot;[N] days left&quot;, and the sign-up link. Energetic but clear; ticking clock and crowd ambience at low level.</div></div>
+
+<div class="prompt" id="prompt-29"><div class="prompt-head"><span class="prompt-label">PROMPT 29</span><span class="prompt-title">Pricing explained in 30 s</span></div><div class="prompt-body">Make a 30 s 16:9 explainer of my pricing: [PLANS + PRICES + WHAT&#x27;S INCLUDED]. Animate the plan cards rising like a bar chart, highlight the recommended plan with a glow and a &quot;Most popular&quot; ribbon, and show a quick comparison of 3 key features with ticks and crosses. End with &quot;[CALL TO ACTION]&quot;. Clean SaaS style.</div></div>
+<h2 id="art-styles">Art <em>styles</em></h2>
+<p class="lead">Same story, different worlds. Use these as the "Style" part of any prompt, or as complete short films.</p>
+<div class="prompt" id="prompt-30"><div class="prompt-head"><span class="prompt-label">PROMPT 30</span><span class="prompt-title">Watercolour &amp; ink</span></div><div class="prompt-body">Make a 30 s [FORMAT] short film about [SUBJECT] in a hand-made watercolour and ink style: soft layered colour washes with darker edges on warm paper texture, ink lines that &quot;boil&quot; slightly (redrawn 8 times per second), gentle film grain and vignette, slow camera push. Transitions: watercolour blooms and brush wipes. Palette: [e.g. sage, blush, terracotta, cream]. Soft piano and real paper sounds.</div></div>
+
+<div class="prompt" id="prompt-31"><div class="prompt-head"><span class="prompt-label">PROMPT 31</span><span class="prompt-title">Paper cut-out</span></div><div class="prompt-body">Make a 25 s [FORMAT] video about [SUBJECT] in a layered paper cut-out style: flat coloured paper shapes with visible thickness and soft drop shadows, parallax between layers, slight paper texture, elements that pop up like a pop-up book. Palette: [COLOURS]. Sound: paper rustles, soft pops, light music box melody.</div></div>
+
+<div class="prompt" id="prompt-32"><div class="prompt-head"><span class="prompt-label">PROMPT 32</span><span class="prompt-title">16-bit pixel art</span></div><div class="prompt-body">Make a 20 s 9:16 pixel-art video (16-bit console style, 320×568 virtual resolution scaled up with sharp pixels) about [SUBJECT]: a tiny character walking through [WORLD], collecting [ITEMS] that each reveal a tip. Retro UI frames, score counter, chiptune-style sound effects.</div></div>
+
+<div class="prompt" id="prompt-33"><div class="prompt-head"><span class="prompt-label">PROMPT 33</span><span class="prompt-title">Neon synthwave</span></div><div class="prompt-body">Make a 20 s [FORMAT] synthwave video for [SUBJECT]: purple-pink gradient sky, a glowing grid floor scrolling toward the horizon, a striped retro sun, chrome text with neon glow and scanlines. Pulsing 100 BPM retro synth beat; text hits on the downbeats.</div></div>
+
+<div class="prompt" id="prompt-34"><div class="prompt-head"><span class="prompt-label">PROMPT 34</span><span class="prompt-title">Low-poly 3D</span></div><div class="prompt-body">Make a 25 s 9:16 low-poly 3D scene (three.js) about [SUBJECT]: a small floating island with [ELEMENTS], soft pastel lighting, gentle orbit camera, objects that grow from the ground with bouncy easing. Titles in clean sans-serif over the scene. Light ambience + soft pops.</div></div>
+
+<div class="prompt" id="prompt-35"><div class="prompt-head"><span class="prompt-label">PROMPT 35</span><span class="prompt-title">Clay / soft 3D</span></div><div class="prompt-body">Make a 20 s 9:16 video in a soft &quot;clay&quot; 3D look (rounded shapes, matte pastel materials, soft shadows, tiny imperfections) showing [SUBJECT]. Objects squash and stretch when they land. Cute, tactile sound effects (boops, squishes).</div></div>
+
+<div class="prompt" id="prompt-36"><div class="prompt-head"><span class="prompt-label">PROMPT 36</span><span class="prompt-title">Whiteboard explainer</span></div><div class="prompt-body">Make a 45 s 16:9 whiteboard-style explainer of [CONCEPT]: black marker lines drawn progressively on a white board, handwritten-style titles, simple icons and arrows, a few colour highlights in [COLOUR]. Explain it in 4 steps. Add a calm voice-over in [LANGUAGE] and marker squeak sounds when drawing.</div></div>
+
+<div class="prompt" id="prompt-37"><div class="prompt-head"><span class="prompt-label">PROMPT 37</span><span class="prompt-title">Retro risograph poster</span></div><div class="prompt-body">Make a 15 s 9:16 animated poster for [EVENT / IDEA] in a risograph print style: 2–3 spot colours ([COLOURS]) with slight misregistration, grain texture, bold condensed type, shapes that slide and overlap. Loopable ending.</div></div>
+
+<div class="prompt" id="prompt-38"><div class="prompt-head"><span class="prompt-label">PROMPT 38</span><span class="prompt-title">Ukiyo-e woodblock</span></div><div class="prompt-body">Make a 30 s 16:9 short in a Japanese ukiyo-e woodblock style about [SUBJECT]: flat colour areas, bold outlines, stylised waves and clouds, washi paper texture, slow parallax. Gentle traditional-sounding plucked melody (synthesised) and wind.</div></div>
+
+<div class="prompt" id="prompt-39"><div class="prompt-head"><span class="prompt-label">PROMPT 39</span><span class="prompt-title">Blueprint / technical</span></div><div class="prompt-body">Make a 25 s 16:9 blueprint-style explainer of [PRODUCT / OBJECT]: white technical lines drawn on a blue grid, dimension arrows and callout labels that appear one by one, an exploded view that separates the parts, then reassembles. Mechanical click and drafting sounds.</div></div>
+
+<div class="prompt" id="prompt-40"><div class="prompt-head"><span class="prompt-label">PROMPT 40</span><span class="prompt-title">Minimal Swiss motion</span></div><div class="prompt-body">Make a 15 s 9:16 minimal Swiss-design motion piece for [MESSAGE]: strict grid, big Helvetica-style type, red/black/white only, shapes that snap into place with precise easing. Very clean, no textures. Tight percussive sound design.</div></div>
+
+<div class="prompt" id="prompt-41"><div class="prompt-head"><span class="prompt-label">PROMPT 41</span><span class="prompt-title">Isometric city</span></div><div class="prompt-body">Make a 30 s 9:16 isometric illustration video of [PLACE / BUSINESS / CITY]: buildings rise from the ground one by one, tiny cars and people move along roads, day turns to night with lights switching on. Labels pop up for [3 KEY POINTS]. City ambience that changes with the time of day.</div></div>
+
+<h2 id="teach-and-explain">Teach and <em>explain</em></h2>
+<div class="prompt" id="prompt-42"><div class="prompt-head"><span class="prompt-label">PROMPT 42</span><span class="prompt-title">How it works (explainer)</span></div><div class="prompt-body">Make a 45 s 16:9 explainer: &quot;How does [THING] work?&quot; in 4 steps. Each step: a simple diagram that builds itself (shapes, arrows, labels), a one-sentence caption, and a highlight on the part being explained. Finish with a recap of all 4 steps on one screen. Calm voice-over in [LANGUAGE] synced to the steps, subtitles on. Only use facts I provide or that you verify.</div></div>
+
+<div class="prompt" id="prompt-43"><div class="prompt-head"><span class="prompt-label">PROMPT 43</span><span class="prompt-title">Data story with animated charts</span></div><div class="prompt-body">Make a 30 s 9:16 data story from this data: [PASTE NUMBERS / CSV]. Find the most surprising insight, open with it as a big number, then show 2–3 animated charts (bars growing, a line drawing itself, a donut filling) with clear labels and one highlighted bar. End with the takeaway and the data source. Colour-blind-safe palette, readable on a phone.</div></div>
+
+<div class="prompt" id="prompt-44"><div class="prompt-head"><span class="prompt-label">PROMPT 44</span><span class="prompt-title">Animated map journey</span></div><div class="prompt-body">Make a 30 s 16:9 animated map showing [JOURNEY / HISTORY / ROUTE]: a stylised map (no copyrighted map tiles), a path that draws itself from [A] to [B] to [C], labelled stops that pop up with a short fact each, and a moving dot with a soft trail. Old-paper or flat-modern style. Subtle wind and page sounds.</div></div>
+
+<div class="prompt" id="prompt-45"><div class="prompt-head"><span class="prompt-label">PROMPT 45</span><span class="prompt-title">History in 60 seconds</span></div><div class="prompt-body">Make a 60 s 9:16 animated timeline of [TOPIC] from [START YEAR] to [END YEAR]: a horizontal timeline that scrolls, with 6–8 key moments each shown as a small illustrated scene and a one-line caption. Line-art style with one accent colour. Accurate dates only; mark anything uncertain. Light ambient score.</div></div>
+
+<div class="prompt" id="prompt-46"><div class="prompt-head"><span class="prompt-label">PROMPT 46</span><span class="prompt-title">Zoom from big to tiny</span></div><div class="prompt-body">Make a 30 s 9:16 &quot;powers of ten&quot; style zoom from [START, e.g. a room] down to [END, e.g. atoms], with 6 levels, each with a label and one fact. Seamless zoom transitions, scale indicator on the side, wonder-filled ambient sound.</div></div>
+
+<div class="prompt" id="prompt-47"><div class="prompt-head"><span class="prompt-label">PROMPT 47</span><span class="prompt-title">Word of the day (language learning)</span></div><div class="prompt-body">Make a 15 s 9:16 language-learning reel: the word &quot;[WORD]&quot; in [LANGUAGE], its pronunciation, its meaning in [YOUR LANGUAGE], and 2 example sentences that animate in with the key word highlighted. Add a clear voice reading the word and the examples in [LANGUAGE] (native-sounding voice). Clean flashcard design.</div></div>
+
+<div class="prompt" id="prompt-48"><div class="prompt-head"><span class="prompt-label">PROMPT 48</span><span class="prompt-title">Recipe in 30 seconds</span></div><div class="prompt-body">Make a 30 s 9:16 animated recipe for [DISH]: flat illustrated ingredients drop into a bowl one by one with their quantities, then 4 quick steps with simple animations (stirring, baking timer, plating), then the final dish with &quot;Save for later&quot;. Cosy warm palette, real kitchen sounds (chopping, sizzling, timer ding).</div></div>
+<h2 id="faith-and-reminders-with-verified-sources">Faith and <em>reminders</em> (with verified sources)</h2>
+<p class="lead">Faith content deserves the highest accuracy. These prompts make Claude fetch every reference from a reliable source instead of writing it from memory.</p>
+<div class="callout warn"><div class="callout-label">Watch out</div><p><strong>Never let any AI write a verse, hadith or scripture from memory.</strong> Always ask it to fetch the exact text from a reliable source and to show you the reference. Then double-check anything you're unsure about with a knowledgeable person.</p></div>
+
+<div class="prompt" id="prompt-49"><div class="prompt-head"><span class="prompt-label">PROMPT 49</span><span class="prompt-title">Cinematic Qur&#x27;an verse reel</span></div><div class="prompt-body">Make a 45 s 9:16 cinematic reel about Qur&#x27;an [SURAH:AYAH]. First, fetch the exact Arabic text from https://api.quran.com/api/v4/verses/by_key/[SURAH:AYAH]?fields=qpc_uthmani_hafs and render it with the KFGQPC Uthmanic Hafs font (they&#x27;re made for each other: waqf marks and the ayah number display correctly). Fetch the Sahih International translation from https://api.alquran.cloud/v1/ayah/[SURAH:AYAH]/en.sahih and quote it exactly. Never type Qur&#x27;anic text by hand. Story: an emotional setup (2–3 short lines), a visual turning point (light, dawn, a door opening), the verse revealed word by word in gold, the translation as elegant subtitles, one line of reflection, and an end card with the reference. No figures with faces. [No music: real ambience (rain, wind, birds) / soft nasheed-style vocals only]. [Optional: female or male voice reading the English meaning only, never a TTS recitation of the Arabic.] Storyboard first, check the Arabic rendering at high zoom before the full render.</div></div>
+
+<div class="prompt" id="prompt-50"><div class="prompt-head"><span class="prompt-label">PROMPT 50</span><span class="prompt-title">Hadith / sunnah listicle</span></div><div class="prompt-body">Make a 60 s 9:16 listicle: &quot;[N] sunnahs [CONTEXT, e.g. before you sleep]&quot; in the faceless-characters style (round head + capsule body, pastel colours, no faces). Before writing any scene, verify each hadith by fetching its text from https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-bukhari/[NUMBER].json (or the matching collection), and only include details the narration actually contains. Each scene: a title with one highlighted keyword, an italic one-liner, an animated scene, and a source tag like &quot;SAHIH AL-BUKHARI 247&quot;. Hook: the big number + a curiosity line about one item. End with a recap checklist and &quot;Which one are you starting tonight?&quot;. No voice, soft UI pops, light night ambience. Show me the list of hadiths with their texts before animating.</div></div>
+
+<div class="prompt" id="prompt-51"><div class="prompt-head"><span class="prompt-label">PROMPT 51</span><span class="prompt-title">Du&#x27;a / dhikr card</span></div><div class="prompt-body">Make a 20 s 9:16 reel for the du&#x27;a &quot;[TRANSLITERATION]&quot; from [VERIFIED SOURCE]. Fetch the exact Arabic text from the source first. Show the Arabic in a beautiful Arabic font, the transliteration, the meaning, and when to say it. Elegant, calm design ([PALETTE]), gentle reveal animations, a soft chime. Include the source on screen.</div></div>
+
+<div class="prompt" id="prompt-52"><div class="prompt-head"><span class="prompt-label">PROMPT 52</span><span class="prompt-title">Ramadan / special-days countdown</span></div><div class="prompt-body">Make a 15 s 9:16 countdown reel: &quot;[N] days until [RAMADAN / EID / EVENT]&quot;. A crescent moon that fills a little more each day, lanterns that light up, the number counting down, and one short reminder of something to prepare. Warm night palette, soft ambience. Make the number and the reminder easy for me to change for each day (template).</div></div>
+
+<div class="prompt" id="prompt-53"><div class="prompt-head"><span class="prompt-label">PROMPT 53</span><span class="prompt-title">Mindful breathing (any audience)</span></div><div class="prompt-body">Make a 60 s 9:16 guided breathing video using box breathing (4 s in, 4 s hold, 4 s out, 4 s hold) for 3 rounds: a soft shape that expands, holds and contracts with the timing, a gentle text guide (&quot;Breathe in…&quot;), a progress ring, calm gradient colours. Calm female voice guiding each phase, with soft ambience underneath.</div></div>
+<h2 id="music-and-audio">Music and <em>audio</em></h2>
+<div class="prompt" id="prompt-54"><div class="prompt-head"><span class="prompt-label">PROMPT 54</span><span class="prompt-title">Lyric video with word-perfect sync</span></div><div class="prompt-body">Make a 9:16 lyric video for my song (audio file: [FILE], lyrics: [PASTE LYRICS]). Align every word to the vocals (use speech recognition / forced alignment), detect the beats and sections, then show the lyrics karaoke-style: the current word lights up exactly when it&#x27;s sung, scene changes on the downbeats, and a different visual motif for each section. Style: [STYLE]. Check sync on 3 random lines before the full render.</div></div>
+
+<div class="prompt" id="prompt-55"><div class="prompt-head"><span class="prompt-label">PROMPT 55</span><span class="prompt-title">Podcast audiogram</span></div><div class="prompt-body">Make a 30 s 9:16 audiogram from this podcast clip ([FILE]): a live waveform that reacts to the voice, word-by-word captions with the key words highlighted, the episode title and guest name, and the show artwork from [IMAGE]. Clean branded design ([PALETTE]). End with &quot;Full episode: [LINK]&quot;.</div></div>
+
+
+<section class="part" id="part-6"><div class="part-num">Part 6</div><h1 class="part-title">Publish, grow, fix</h1><p class="part-sub">Turn videos into reach, and get unstuck in minutes when something breaks.</p></section>
+<h2 id="the-posting-playbook">The posting <em>playbook</em></h2>
+<p class="lead">The algorithm rewards what people do with your video, not the tool you made it with.</p>
+
+<h3>What actually makes a reel travel</h3>
+<ol>
+<li><strong>Watch time and rewatches.</strong> A strong first 2 seconds, and something moving all the time.</li>
+<li><strong>Shares</strong>, especially by DM. That's the strongest signal for reaching new people. "Send this to someone who…" works.</li>
+<li><strong>Saves.</strong> Useful, list-style content gets saved ("Save this for tonight").</li>
+<li><strong>Comments.</strong> Ask a question that takes zero effort to answer ("Comment the number you'll try").</li>
+</ol>
+<h3>Before you publish</h3>
+<ul>
+<li>[ ] <strong>Cover image:</strong> a clean frame with the big promise (ask Claude to export one: <em>"export the frame at 2.5 s as cover.jpg"</em>).</li>
+<li>[ ] <strong>Caption:</strong> hook line, value, sources if you cite any, one clear question, one call to save or share.</li>
+<li>[ ] <strong>Hashtags:</strong> Instagram now caps posts and Reels at <strong>5 hashtags</strong>. Pick 5 precise ones: 2 broad, 3 niche.</li>
+<li>[ ] <strong>AI label</strong> if you used an AI voice.</li>
+<li>[ ] <strong>Pinned comment</strong> with a question.</li>
+</ul>
+<div class="prompt" id="prompt-56"><div class="prompt-head"><span class="prompt-label">PROMPT 56</span><span class="prompt-title">Caption &amp; hashtags</span></div><div class="prompt-body">Act as my Instagram strategist. For the video we just made, write: 3 hook options for the first line of the caption, one full caption (value + question + save/share call to action, with sources if we cited any), the 5 best hashtags for reach in my niche, a pinned comment, a story idea to promote it, and the best time to post for my main audience in [COUNTRIES / TIME ZONES], converted to my time zone [YOUR CITY].</div></div>
+<h3>When to post</h3>
+<p>Your audience's evening is usually best. If your followers are spread across time zones, aim for the evening of your <strong>largest</strong> audience: the reel keeps being distributed for a day or two, so the next time zones pick it up later. After a few posts, check <strong>Insights → Your audience</strong> (top countries and most active times) and adjust.</p>
+<div class="callout tip"><div class="callout-label">Tip</div><p><strong>Scheduling from a computer.</strong> You can publish Reels from instagram.com, and schedule them from <strong>Meta Business Suite</strong> (business.facebook.com), with an Instagram professional account (free). Posting from a browser doesn't reduce reach.</p></div>
+<h3>Build a series, not a one-off</h3>
+<p>Accounts grow on <strong>recognisable formats</strong>. Once a video performs, turn it into a template (Part 3) and make an episode every week: same style, new content. Your profile grid starts to look like a brand.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p class="lead">Every problem below happened to real users. Here's the fix.</p>
+
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>My repository doesn't show up in Claude Code</strong></td>
+<td>Install the Claude GitHub App on it: github.com/apps/claude/installations/new → Only select repositories → tick your repo.</td>
+</tr>
+<tr>
+<td><strong>"Push refused" / "GitHub access denied"</strong></td>
+<td>Same cause: the app isn't installed on that repo, or your GitHub connection expired. Reconnect GitHub in claude.ai's connector settings, then reinstall the app on the repo.</td>
+</tr>
+<tr>
+<td><strong>Claude can't download voices, fonts or sounds (403, "tunnel failed")</strong></td>
+<td>Your environment's network access is Trusted. Set it to <strong>Full</strong>, or add the domains from Part 2 to a Custom list. Start a new session if needed.</td>
+</tr>
+<tr>
+<td><strong>"Setup script failed" / session won't start</strong></td>
+<td>Open the environment settings and check the setup script line was pasted exactly. The script must finish in about 5 minutes; keep heavy installs for "install the media tools".</td>
+</tr>
+<tr>
+<td><strong>Claude says ffmpeg or the browser is missing</strong></td>
+<td>Say <em>"run sh /tmp/kit/install.sh --doctor and fix what's missing"</em>.</td>
+</tr>
+<tr>
+<td><strong>I can't find my video</strong></td>
+<td>Ask <em>"Where is the MP4, and is it pushed to GitHub?"</em> Then download it from github.com (Part 3). Files over 100 MB can't be pushed to GitHub: ask for a smaller file (CRF 20–23 or 1080p).</td>
+</tr>
+<tr>
+<td><strong>The session forgot everything</strong></td>
+<td>Cloud sessions are wiped after inactivity; the conversation is kept but files that weren't pushed are gone. Make pushing a habit: <em>"push after every finished video"</em>.</td>
+</tr>
+<tr>
+<td><strong>"Context 80 % used" / Claude gets slower</strong></td>
+<td>One video per session. Use <code>/compact</code> to summarise or <code>/clear</code> to start fresh.</td>
+</tr>
+<tr>
+<td><strong>I hit my usage limit</strong></td>
+<td>Limits reset over time. Save usage with "storyboard first", "check stills before full render" and shorter sessions. Bigger plans give more room.</td>
+</tr>
+<tr>
+<td><strong>Text is cut off or covered by Instagram's buttons</strong></td>
+<td><em>"Keep all text inside the safe zone: nothing in the top 12% or bottom 20%, and nothing in the right 12% next to the buttons."</em></td>
+</tr>
+<tr>
+<td><strong>The voice mispronounces a word</strong></td>
+<td><em>"Fix the pronunciation of X phonetically."</em></td>
+</tr>
+<tr>
+<td><strong>Arabic, Hebrew or other scripts look broken</strong></td>
+<td>Ask Claude to use a font made for that script and to check the rendering at high zoom. For Qur'anic text, use the quran.com API text that matches the KFGQPC font (see the verse prompt in Part 5).</td>
+</tr>
+<tr>
+<td><strong>It looks generic / "AI-made"</strong></td>
+<td>Give it a style reference: <em>"Use the design-dna skill on these 3 screenshots, then apply that style."</em> And use real sounds.</td>
+</tr>
+</tbody>
+</table>
+<div class="callout tip"><div class="callout-label">Tip</div><p>When in doubt, describe the problem to Claude in plain words. It can read its own error messages, check its setup and fix most issues itself.</p></div>
+<h2 id="the-one-page-checklist">The one-page <em>checklist</em></h2>
+<ul class="checklist">
+<li><strong>Idea:</strong> one promise, one audience, one format (list, quote, story, explainer).</li>
+<li><strong>Prompt:</strong> master template filled in, "storyboard first", safe zones, sound choice.</li>
+<li><strong>Storyboard approved</strong>, hook checked: would you stop scrolling?</li>
+<li><strong>Stills checked</strong>: readable on a phone, no overlaps, no empty moments.</li>
+<li><strong>Sound:</strong> voice or not, real effects on the cues, around −14 LUFS, earshot critique.</li>
+<li><strong>Facts and sources verified</strong>, shown on screen when it matters.</li>
+<li><strong>Final contact sheet</strong> reviewed. MP4 <strong>pushed to GitHub</strong> and downloaded.</li>
+<li><strong>Cover, caption, 5 hashtags, AI label if needed, pinned comment.</strong></li>
+<li><strong>Posted</strong> at your audience's best time. Story shared within 30 minutes.</li>
+<li><strong>Template saved</strong> for the next episode.</li>
+</ul>
+
+<h2 id="credits-licences-and-thank-yous">Credits, licences and <em>thank yous</em></h2>
+<p>The starter kit stands on the shoulders of generous open-source creators. Their licences are included in the kit; please keep them if you share it.</p>
+<table>
+<thead>
+<tr>
+<th>Project</th>
+<th>What it brings</th>
+<th>Licence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/LottieFiles/motion-design-skill">LottieFiles/motion-design-skill</a></td>
+<td>Motion design principles</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><a href="https://github.com/greensock/gsap-skills">greensock/gsap-skills</a></td>
+<td>Official GSAP animation skills</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><a href="https://github.com/CloudAI-X/threejs-skills">CloudAI-X/threejs-skills</a></td>
+<td>Three.js 3D skills</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><a href="https://github.com/zanwei/design-dna">zanwei/design-dna</a></td>
+<td>Extract and reuse a visual style</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Leonxlnx/earshot">Leonxlnx/earshot</a></td>
+<td>Listening tools for agents</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td>real-sfx</td>
+<td>Sound design with real recordings + uisfx sounds (CC0)</td>
+<td>MIT</td>
+</tr>
+<tr>
+<td><a href="https://github.com/WordPress/openverse">Openverse</a></td>
+<td>Search for openly licensed media</td>
+<td>Public API</td>
+</tr>
+<tr>
+<td><a href="https://github.com/thewh1teagle/kokoro-onnx">kokoro-onnx</a>, <a href="https://github.com/rhasspy/piper">Piper</a></td>
+<td>Free voices</td>
+<td>Apache-2.0 / MIT</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Panniantong/Agent-Reach">Agent Reach</a></td>
+<td>Reading X, YouTube, Reddit…</td>
+<td>MIT</td>
+</tr>
+</tbody>
+</table>
+<p>For inspiration, these public collections are gold mines of styles and prompts: <a href="https://github.com/lemomo-ai/lemo-opuscar">lemo-opuscar</a> (59 film styles), <a href="https://github.com/Vincentwei1021/mg-styles-15">mg-styles-15</a>, <a href="https://github.com/JohnHeibel/ClaudeAnimationBase">ClaudeAnimationBase</a>, <a href="https://github.com/yihui-dev/awesome-opus5-5-videos">awesome-opus5-5-videos</a>, <a href="https://github.com/athemeroy/awesome-claude-5-5-videos">awesome-claude-5-5-videos</a> and <a href="https://github.com/joeseesun/opus-video-prompts">opus-video-prompts</a>.</p>
+<p class="legal"><strong>Disclaimer.</strong> This guide is independent and is not affiliated with, endorsed by or sponsored by Anthropic, GitHub, Meta or any project mentioned. "Claude" and "Claude Code" are trademarks of Anthropic; other names belong to their owners and are used only to describe compatibility. Features, plans, prices and interfaces change: check the official pages linked in this book. You're responsible for the content you publish, including the accuracy of facts and religious references, music and sound licences, and platform rules. Results vary with your plan, prompts and settings.</p>
+</body></html>
